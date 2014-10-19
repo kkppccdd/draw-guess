@@ -75,7 +75,7 @@ body {
 			</div>
 			<img src="<%=question.imageUrl%>" />
 		</div>
-		<form style="display:none;" id="guessForm" name="guessForm" action="/data/question/<%=question._id %>" method="post" enctype="application/x-www-form-urlencoded">
+		<form style="display:none;" id="guessForm" name="guessForm" action="/data/question/<%=question._id %>.html" method="post" enctype="application/x-www-form-urlencoded">
 			<input name="questionId" value="<%=question._id %>" type="hidden"/>
 			<input name="answer" value="" type="hidden"/>
 		</form>

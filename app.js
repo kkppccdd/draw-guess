@@ -54,7 +54,7 @@ app.post("/data/question",function(req,res,next){
     });
 });
 
-app.get("/data/question/:id",function(req,res,next){
+app.get("/data/question/:id.html",function(req,res,next){
 	var id=req.params.id;
 	db.collection("question").findById(id,function (err, model) {
         res.render("question",{question:model});
@@ -62,7 +62,7 @@ app.get("/data/question/:id",function(req,res,next){
 });
 
 // guess
-app.post("/data/question/:id",function(req,res,next){
+app.post("/data/question/:id.html",function(req,res,next){
 	var id = req.param("questionId",null);
 	var guessAnswer=req.param("answer",null);
 	// load 
