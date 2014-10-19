@@ -37,10 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 //app.all('/data/*',dataService.listen('/data'));
 
-// development only
-if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
-}
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 app.use(cookieParser());
