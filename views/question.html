@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<title>我画你猜</title>
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+<link rel="stylesheet"
+	href="/lib/jquery.mobile/jquery.mobile-1.2.0.min.css" />
+<link rel="stylesheet" href="/lib/jquery.mobile.simpledialog.min.css" />
+<script src="/lib/jquery/jquery-1.8.2.min.js"></script>
+<script src="/lib/jquery.mobile/jquery.mobile-1.2.0.min.js"></script>
+<script src="/lib/jquery.mobile.simpledialog2.min.js"></script>
+<style type="text/css">
+body {
+	margin: 0px;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	/* prevent text selection on ui */
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	/* prevent scrolling in windows phone */
+	-ms-touch-action: none;
+}
+</style>
+<script type="text/javascript">
+	// link the new button with newCanvas() function
+	$(document).ready(function() {
+		$("#draw").click(function() {
+			window.location = "/draw.html";
+		});
+		
+		$("#guess").click(function(){
+			// show dialog ask answer
+			$(document).simpledialog2({
+			    mode: 'button',
+			    headerText: '你的答案?',
+			    headerClose: true,
+			    buttonPrompt: '你的答案',
+			    buttonInput: true,
+			    buttons : {
+			      '确定': {
+			        click: function () { 
+			          //
+			          var answer=$.mobile.sdLastInput;
+			          
+			          console.debug("guess:"+answer);
+			          document.guessForm.elements['answer'].value=answer;
+			          document.guessForm.submit();
+			          }
+			        }
+			      }
+			    })
+			}
+			);
+	});
+</script>
+</head>
+<body>
+	<div data-role="page" id="page1">
+		<div data-theme="a" data-role="header">
+			<h3>我画你猜</h3>
+			<a id="draw" data-role="button" data-theme="b" class="ui-btn-left">画</a>
+			<div class="ui-btn-right" data-role="controlgroup" data-type="horizontal">
+			<!-- <a id="share" data-role="button" data-theme="b" class="">分享</a>-->
+			<a id="guess" data-role="button" data-theme="b" class="">猜</a>
+			</div>
+		</div>
+		<div id="content">
+			
+			<img src="<%=question.imageUrl%>" style="width:100%;display:block;"/>
+		</div>
+		<form style="display:none;" id="guessForm" name="guessForm" action="/data/question/<%=question._id %>" method="post" enctype="application/x-www-form-urlencoded">
+			<input name="questionId" value="<%=question._id %>" type="hidden"/>
+			<input name="answer" value="" type="hidden"/>
+		</form>
+	</div>
+</body>
+</html>
