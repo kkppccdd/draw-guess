@@ -145,6 +145,7 @@ $(document).ready(function () {
 		        	                   
 		        	                   $.post("/data/question",question,sucess=function(msg){
 		        	                	   console.debug(msg);
+		        	                	   window.location="/data/question/"+msg._id;
 		        	                   },"json");
 		        	                },
 		        	                onError: function(status) {

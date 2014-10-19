@@ -21,7 +21,7 @@ var AWS_SECRET_KEY = process.env.AWS_SECRET_KEY;
 var S3_BUCKET = process.env.S3_BUCKET
 
 //load mongodb url
-var mongodbUrl=process.env.MONGODB_URL;
+var mongodbUrl=process.env.MONGOHQ_URL;
 
 var db = mongoskin.db(mongodbUrl, {native_parser:true});
 
