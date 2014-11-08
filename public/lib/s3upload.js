@@ -94,8 +94,8 @@
       this_s3upload = this;
       
       //
-      url=url.replace("s3.amazonaws.com","s3-ap-southeast-1.amazonaws.com");
-      public_url=public_url.replace("s3.amazonaws.com","s3-ap-southeast-1.amazonaws.com");
+      //url=url.replace("s3.amazonaws.com","s3-ap-southeast-1.amazonaws.com");
+      //public_url=public_url.replace("s3.amazonaws.com","s3-ap-southeast-1.amazonaws.com");
       
       xhr = this.createCORSRequest('PUT', url);
       if (!xhr) {
