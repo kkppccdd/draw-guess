@@ -5,7 +5,6 @@
 
 var express = require('express')
   , routes = require('./routes')
-  , user = require('./routes/user')
   , ejs=require("ejs")
   , http = require('http')
   , path = require('path')
@@ -54,7 +53,7 @@ app.post("/data/question",function(req,res,next){
     });
 });
 
-app.get("/data/question/:id.html",function(req,res,next){
+app.get("/page/question/:id.html",function(req,res,next){
 	var id=req.params.id;
 	db.collection("question").findById(id,function (err, model) {
         res.render("question",{question:model});
@@ -62,7 +61,7 @@ app.get("/data/question/:id.html",function(req,res,next){
 });
 
 // guess
-app.post("/data/question/:id.html",function(req,res,next){
+app.post("/page/question/:id.html",function(req,res,next){
 	var id = req.param("questionId",null);
 	var guessAnswer=req.param("answer",null);
 	// load 
@@ -97,7 +96,7 @@ app.post("/data/question/:id.html",function(req,res,next){
 
 
 
-app.get('/signS3put', function(req, res){
+app.get('/util/signS3put', function(req, res){
     aws.config.update({accessKeyId: AWS_ACCESS_KEY, secretAccessKey: AWS_SECRET_KEY});
     var s3 = new aws.S3();
     var s3_params = {

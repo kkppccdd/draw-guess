@@ -3,13 +3,16 @@
 <head>
     <title>我画你猜</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    
 	<link rel="stylesheet" href="http://ajax.aspnetcdn.com/ajax/jquery.mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
 	<link rel="stylesheet" href="/lib/jquery.mobile.simpledialog.min.css" />
 	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"></script>
 	<script src="http://ajax.aspnetcdn.com/ajax/jquery.mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
-	<script src="lib/jquery.mobile.simpledialog2.min.js" ></script>
-	<script src="lib/canvas-to-blob.min.js" ></script>
-	<script src="lib/s3upload.js" ></script>
+	<script src="/lib/jquery.mobile.simpledialog2.min.js" ></script>
+	<script src="/lib/canvas-to-blob.min.js" ></script>
+	<script src="/lib/s3upload.js" ></script>
     <style type="text/css">
 	  body {
 		margin:0px;
@@ -32,34 +35,51 @@
 		cursor:crosshair ;
         background-color:#fff;
 	  }
-	  .palette-case {
+	  .tool-case {
 		width:260px;
 		margin:auto;
 		text-align:center;
 	  }
-	  .palette-box {
+	  .tool-box {
 		float:left;
 		padding:2px 6px 2px 6px;
 	  }
-	  .palette {
+	  .tool {
 		border:2px solid #777;
 		height:36px;
 		width:36px;
 	  }
+	  .color-card{
+	  	height:64px;
+		width:64px;
+		}
 	  .red{
-		background-color:#c22;
+		background-color:#FF0000;
 	  }
 	  .blue{
-		background-color:#22c;
+		background-color:#0000FF;
 	  }
 	  .green{
-		background-color:#2c2;
+		background-color:#00FF00;
 	  }
+	  .yellow{
+	  	background-color:#FFFF00;
+	  }
+	  .aqua{
+	  	background-color:#00FFFF;
+	  }
+	  .fuchsia{
+	  	background-color:#FF00FF;
+	  }
+	  .silver{
+	  	background-color:#C0C0C0;
+	  }
+	  
 	  .white{
 		background-color:#fff;
 	  }
 	  .black{
-		background-color:#000;
+		background-color:#000000;
 		border:2px dashed #fff;
 	  }
 	  
@@ -106,14 +126,40 @@ $(document).ready(function () {
 	$("[data-role=footer]").fixedtoolbar({ tapToggle: false });
 	
 	// reset palette selection (css) and select the clicked color for canvas strokeStyle
-	$(".palette").click(function(){
-		$(".palette").css("border-color", "#777");
-		$(".palette").css("border-style", "solid");
+	$(".tool").click(function(){
+		$(".tool").css("border-color", "#777");
+		$(".tool").css("border-style", "solid");
 		$(this).css("border-color", "#fff");
 		$(this).css("border-style", "dashed");
+		
+	});
+	
+	$(".small-pen").click(function(){
+		 $.fn.draw=$.fn.smallPenDraw;
+		 console.info("set tool small pen");
+		 ctx.beginPath();
+	});
+	
+	$(".medium-pen").click(function(){
+		 $.fn.draw=$.fn.mediumPenDraw;
+		 console.info("set tool medium pen");
+		 ctx.beginPath();
+	});
+	$(".eraser").click(function(){
+		$.fn.draw=$.fn.eraserDraw;
+		 console.info("set tool eraser");
+		 ctx.beginPath();
+	});
+	
+	/*******
+	* choose color
+	*/
+	$(".color-card").click(function(){
 		color = $(this).css("background-color");
-		ctx.beginPath();
-		ctx.strokeStyle = color;
+		console.info("choose color:"+color);
+		$(".color-choice").css("background-color",color);
+		
+		$("#colorPalette").popup("close");
 	});
     
 	// link the new button with newCanvas() function
@@ -171,7 +217,7 @@ $(document).ready(function () {
 			        	                   window.setTimeout(function(){
 			        	                   	$("#uploadSuccessPop").popup("close");
 			        	                   
-		        	                	   	window.location="/data/question/"+msg._id+".html";
+		        	                	   	window.location="/page/question/"+msg._id+".html";
 			        	                   },1200);
 		        	                   },"json");
 		        	                },
@@ -201,6 +247,9 @@ $(document).ready(function () {
 		    }
 		  })
 	});
+	
+	
+	
 });
 
 // function to setup a new canvas for drawing
@@ -212,8 +261,13 @@ function newCanvas(){
     
     // setup canvas
 	ctx=document.getElementById("canvas").getContext("2d");
-	ctx.strokeStyle = color;
-	ctx.lineWidth = 1;	
+	
+	// set init value
+	
+	// choose smal pen by default
+	$(".small-pen").trigger("click");
+	// choose color black by default
+	$(".black").trigger("click");
 	
 	// setup to trigger drawing on mouse or touch
 	$("#canvas").drawTouch();
@@ -235,8 +289,7 @@ $.fn.drawTouch = function() {
         e = e.originalEvent;
 		x = e.changedTouches[0].pageX;
 		y = e.changedTouches[0].pageY-44;
-		ctx.lineTo(x,y);
-		ctx.stroke();
+		$("#canvas").draw(x,y);
 	};
 	$(this).on("touchstart", start);
 	$(this).on("touchmove", move);	
@@ -256,8 +309,7 @@ $.fn.drawPointer = function() {
         e = e.originalEvent;
 		x = e.pageX;
 		y = e.pageY-44;
-		ctx.lineTo(x,y);
-		ctx.stroke();
+		$("#canvas").draw(x,y);
     };
 	$(this).on("MSPointerDown", start);
 	$(this).on("MSPointerMove", move);
@@ -277,8 +329,7 @@ $.fn.drawMouse = function() {
 		if(clicked){
 			x = e.pageX;
 			y = e.pageY-44;
-			ctx.lineTo(x,y);
-			ctx.stroke();
+			$("#canvas").draw(x,y);
 		}
 	};
 	var stop = function(e) {
@@ -288,6 +339,73 @@ $.fn.drawMouse = function() {
 	$(this).on("mousemove", move);
 	$(window).on("mouseup", stop);
 };
+
+/*********
+ * draw functions
+ */
+
+ 
+ $.fn.smallPenDraw=function(x,y){
+	 ctx.lineWidth = 1;	
+	 ctx.strokeStyle=color;
+	 ctx.lineTo(x,y);
+	 ctx.stroke();
+}
+
+ $.fn.mediumPenDraw=function(x,y){
+	 ctx.lineWidth = 5;	
+	 ctx.strokeStyle=color;
+	 ctx.lineTo(x,y);
+	 ctx.stroke();
+}
+ 
+ $.fn.eraserDraw=function(x,y){
+	 ctx.lineWidth = 8;	
+	 ctx.strokeStyle="#FFFFFF";
+	 ctx.lineTo(x,y);
+	 ctx.stroke();
+}
+
+$.fn.crayonDraw=function(x,y){
+	var v = 2;//this.subtract(this._latest);//当前点与下一个点的距离的横纵坐标 
+    var s = Math.ceil(5 / 2);		//算出粒子的单位长度
+    var stepNum = Math.floor(v.length() / s) + 1;	//算出步长  v.length()为斜线长度
+    v.normalize(s);//当前点与下一个点的
+	
+	
+	
+    var sep = 1.5; // 分割数  控制画笔的浓密程度  关键所在
+	//粒子的大小 根据画笔描绘的速度（画笔的停留时间）进行调整
+    var dotSize = sep * Math.min(10 / 1 * 3, 1);
+    var dotNum = Math.ceil(this.size * sep);
+	/**debug调试
+    log(stepNum);
+	log(dotNum);
+	log(dotSize);
+	**/
+	
+    var range = this.size / 2;
+    var i, j, p, r, c, x, y;
+    
+    for (i = 0; i < dotNum; i++) {
+		for (j = 0; j < stepNum; j++) {
+			p = this._latest.add(v.scale(j));
+			r = random(range);
+			c = random(Math.PI * 2);
+			w = random(dotSize, dotSize / 2);
+			h = random(dotSize, dotSize / 2);
+			x = p.x + r * Math.sin(c) - w / 2;
+			y = p.y + r * Math.cos(c) - h / 2;
+			ctx.rect(x, y, w, h);
+			//ctx.arc(x,y,w,0,Math.PI * 2,true);
+		}
+	}
+    
+    ctx.fill();
+    ctx.restore();
+}
+
+ $.fn.draw=$.fn.penDraw;
 
 	</script>
 </head>
@@ -299,24 +417,58 @@ $.fn.drawMouse = function() {
 		<a id="complete" data-role="button" data-theme="b" class="ui-btn-right">完成</a>
     </div>
     <div id="content"><p style="text-align:center">Loading Canvas...</p></div>
-    <div data-theme="a" data-role="footer" data-position="fixed">
-		<div class="palette-case">
-			<div class="palette-box">
-				<div class="palette white"></div>
+    <div data-theme="b" data-role="footer" data-position="fixed">
+		<div class="tool-case">
+			<div class="tool-box">
+				<div class="tool small-pen">
+					<image src="/image/pen-small.png" height="36px"/>
+				</div>
 			</div>	
-			<div class="palette-box">
-				<div class="palette red"></div>
+			<div class="tool-box">
+				<div class="tool medium-pen">
+					<image src="/image/medium-pen.png" height="36px"/>
+				</div>
 			</div>
-			<div class="palette-box">
-				<div class="palette blue"></div>
+			<div class="tool-box">
+				<div class="tool eraser">
+					<image src="/image/eraser.png" height="36px"/>
+				</div>
 			</div>
-			<div class="palette-box">
-				<div class="palette green"></div>
+			<div class="tool-box">
+			
+				<div class="color-palette">
+				<a href="#colorPalette" data-rel="popup" data-transition="slideup">
+					<div class="color-choice" style="background-color:black;width:36px;height:36px;"></div>
+				</a>
+				<div data-role="popup" id="colorPalette" data-theme="b" class="ui-grid-b">
+						<div class="ui-block-a">
+						<div class="color-card red" data-rel="back"></div>
+						</div>
+						<div class="ui-block-b">
+						<div class="color-card blue"></div>
+						</div>
+						<div class="ui-block-c">
+						<div class="color-card green"></div>
+						</div>
+						<div class="ui-block-a">
+						<div class="color-card yellow"></div>
+						</div>
+						<div class="ui-block-b">
+						<div class="color-card aqua"></div>
+						</div>
+						<div class="ui-block-c">
+						<div class="color-card fuchsia"></div>
+						</div>
+						<div class="ui-block-a">
+						<div class="color-card silver"></div>
+						</div>
+						<div class="ui-block-b">
+						<div class="color-card black"></div>
+					</div>
+				</div>
+				</div>
+			
 			</div>
-			<div class="palette-box">
-				<div class="palette black"></div>
-			</div>		
-			<div style="clear:both"></div>
 		</div>
     </div>
     <div data-role="popup" id="uploadSuccessPop">
