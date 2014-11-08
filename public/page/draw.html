@@ -193,14 +193,14 @@ $(document).ready(function () {
 		        	            console.debug(imageBlob);
 		        	            
 		        	            var s3Uploader = new S3Upload({
-		        	            	s3_object_name:generateUUID(),
+		        	            	s3_object_name:generateUUID()+".png",
 		        	            	onProgress: function(percent, message) {
 		        	                    console.debug('Upload progress: ' + percent + '% ' + message);
 		        	                },
 		        	                onFinishS3Put: function(public_url) {
 		        	                	
 		        	                   console.debug('Upload completed. Uploaded to: '+ public_url);
-		        	                   
+		        	                   public_url=public_url.replace("https://","http://");
 		        	                   // post question
 		        	                   
 		        	                   var question = {

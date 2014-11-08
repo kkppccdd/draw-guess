@@ -29,7 +29,7 @@ var app = express();
 // all environments
 
 
-app.use(express.compress());
+//app.use(express.compress());
 app.use(logger('dev'));
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
