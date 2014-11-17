@@ -205,22 +205,31 @@ $(document).ready(function () {
 		        	                   
 		        	                   var question = {
 		        	                		   imageUrl:public_url,
-		        	                		   answer:answer
+		        	                		   answer:answer,
+		        	                		   correct:0,
+		        	                		   wrong:0
 		        	                   };
+		        	                   $.ajax({
+		        	                	   url:"/data/question",
+		        	                	   type:"POST",
+		        	                	   data: JSON.stringify(question),
+		        	                	   contentType: 'application/json',
+		        	                	   dataType: 'json',
+		        	                	   success:function(msg){
+			        	                	   console.debug(msg);
+			        	                	   
+			        	                	   $.mobile.loading("hide");
+			        	                	   hideModal();
+				        	                   
+				        	                   $("#uploadSuccessPop").popup("open");
+				        	                   window.setTimeout(function(){
+				        	                   	$("#uploadSuccessPop").popup("close");
+				        	                   
+			        	                	   	window.location="/page/question/"+msg._id+".html";
+				        	                   },1200);
+			        	                   }
+		        	                   });
 		        	                   
-		        	                   $.post("/data/question",question,sucess=function(msg){
-		        	                	   console.debug(msg);
-		        	                	   
-		        	                	   $.mobile.loading("hide");
-		        	                	   hideModal();
-			        	                   
-			        	                   $("#uploadSuccessPop").popup("open");
-			        	                   window.setTimeout(function(){
-			        	                   	$("#uploadSuccessPop").popup("close");
-			        	                   
-		        	                	   	window.location="/page/question/"+msg._id+".html";
-			        	                   },1200);
-		        	                   },"json");
 		        	                },
 		        	                onError: function(status) {
 		        	                   console.debug('Upload error: ' + status);

@@ -1,4 +1,3 @@
-
 /**
  * Module dependencies.
  */
@@ -37,12 +36,18 @@ app.engine('.html', require('ejs').__express);
 app.set('view engine', 'html');
 app.use(express.static(path.join(__dirname, 'public')));
 
-//app.all('/data/*',dataService.listen('/data'));
+var dataServiceRouter = require("./data/service.js");
+app.use('/data',dataServiceRouter);
 
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 app.use(cookieParser());
+
+var questionRouter = require("./routes/question.js");
+
+app.use("/page/question",questionRouter);
+/*
 app.post("/data/question",function(req,res,next){
 	req.body['correct']=0;
 	req.body['wrong']=0;
@@ -56,46 +61,7 @@ app.post("/data/question",function(req,res,next){
     });
 });
 
-app.get("/page/question/:id.html",function(req,res,next){
-	var id=req.params.id;
-	db.collection("question").findById(id,function (err, model) {
-        res.render("question",{question:model});
-    });
-});
-
-// guess
-app.post("/page/question/:id.html",function(req,res,next){
-	var id = req.param("questionId",null);
-	var guessAnswer=req.param("answer",null);
-	// load 
-	db.collection("question").findById(id,function (err, model) {
-        if(model.answer === guessAnswer){
-        	//
-        	
-        	model.correct=(model.correct==undefined?0:model.correct)+1;
-        	db.collection("question").updateById(model._id,model,function(err,result){
-        		if(err){
-        			console.error(err);
-        		}else{
-        			console.log(result);
-        		}
-        	});
-        	
-        	res.render("guess-correct",{question:model});
-        }else{
-        	model.wrong=(model.wrong==undefined?0:model.wrong)+1;
-        	db.collection("question").updateById(model._id,model,function(err,result){
-        		if(err){
-        			console.error(err);
-        		}else{
-        			console.log(result);
-        		}
-        	});
-        	
-        	res.render("guess-wrong",{question:model});
-        }
-    });
-});
+*/
 
 
 

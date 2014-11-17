@@ -13,39 +13,50 @@ var bodyParser = require('body-parser');
 var mongoskin = require('mongoskin');
 var mongo=require("mongodb");
 
-//load mongodb url
-var mongodbUrl=process.env.MONGODB_URL;
-
-var db = mongoskin.db(mongodbUrl, {native_parser:true});
+var assert = require("assert");
 
 
-var router = express.Router();
 
-router.use(bodyParser.json());
-router.use(bodyParser.urlencoded());
-router.use(cookieParser());
 
-// set db for each request
-router.use(function(req,res,next){
-    req.db = db;
-    next();
-});
 
-router.listen=function(parentPath){
+module.exports = (function() {
+	'use strict';
+	var router = express.Router();
+
+	// load mongodb url
+	var mongodbUrl = process.env.MONGOHQ_URL;
+
+	var db = mongoskin.db(mongodbUrl, {
+		native_parser : true
+	});
 	
+	router.use(bodyParser.json());
+	router.use(bodyParser.urlencoded());
+	router.use(cookieParser());
+
+	// set db for each request
+	router.use(function(req,res,next){
+	    req.db = db;
+	    next();
+	});
 	
 	//get model
 
-	router.get(parentPath+"/:modelName/:id?",function(req,res){
+	router.get("/:modelName/:id?",function(req,res){
 		if(req.params.id === undefined){
 			// get list
 			//res.send("get list"+JSON.stringify(req.query));
 			var db = req.db;
 			var modelName=req.params.modelName;
-			var query=req.query;
-			db.collection(modelName).findItems(query,function (err, models) {
-		        res.json(models);
-		    });
+			var criteria =JSON.parse(req.query.criteria || '{}');
+			var sort = JSON.parse(req.query.sort || '{}');
+			var limit = parseInt(req.query.limit || '10');
+			var skip = parseInt(req.query.skip || '0');
+			db.collection(modelName).find(criteria).sort(sort).skip(skip).limit(limit).toArray(function(err, items) {
+				  assert.ok(err == null);
+				  res.json(items);
+			});
+			
 		}else{
 			
 			//get specific model
@@ -60,8 +71,7 @@ router.listen=function(parentPath){
 		
 	});
 	
-	router.post(parentPath+"/:modelName/:id?",function(req,res){
-		if(req.params.id === undefined){
+	router.post("/:modelName/:id?",function(req,res){
 			// create
 			var db = req.db;
 			var modelName=req.params.modelName;
@@ -73,25 +83,26 @@ router.listen=function(parentPath){
 		    		res.send(result[0]);
 		    	}
 		    });
-		}else{
-			//update
-			var db = req.db;
-			var modelName=req.params.modelName;
-			var id=req.params.id;
-			req.body["_id"]=new mongo.ObjectID(id);
-		    db.collection(modelName).updateById(id,req.body, function(err, result){
-		    	if(err){
-		    		res.status(500);
-		    		res.send(err.message);
-		    	}else{
-		    		res.send(result);
-		    	}
-		    });
-		}
+		
 		
 	});
+	router.put("/:modelName/:id?",function(req,res){
+		//update
+		var db = req.db;
+		var modelName=req.params.modelName;
+		var id=req.params.id;
+		req.body["_id"]=new mongo.ObjectID(id);
+	    db.collection(modelName).updateById(id,req.body, function(err, result){
+	    	if(err){
+	    		res.status(500);
+	    		res.send(err.message);
+	    	}else{
+	    		res.send(result);
+	    	}
+	    });
+	});
 	
-	router.delete(parentPath+'/:modelName/:id',function(req,res){
+	router.delete('/:modelName/:id',function(req,res){
 		var db = req.db;
 		var modelName=req.params.modelName;
 		var id=req.params.id;
@@ -102,11 +113,5 @@ router.listen=function(parentPath){
 	    });
 	});
 	
-	
-	
-	return this;
-};
-
-
-
-module.exports=router;
+	return router;
+})();
