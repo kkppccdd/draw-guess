@@ -23,6 +23,12 @@ module.exports = {
         test.equals(result.similarity, (1.0/9.0) * 0.5);
         test.done();
     },
+    testCompareAnswerOnlyOneCharMatchedWithCorrectPosition:function(test){
+    	var result = this.guessModule.compareAnswer("奧特曼在银行下象棋","二田曼日金上左右人");
+        test.equals(result.message, '总共9个字，你只猜对了1个。');
+        test.equals(result.similarity, (1.0/9.0) * 0.5+(1.0/9.0) * 0.5);
+        test.done();
+    },
     testCompareAnswerOnlyTwoCharMatched:function(test){
     	var result = this.guessModule.compareAnswer("奧特曼在银行下象棋","二田日曼左右奧");
         test.equals(result.message, '总共9个字，你只猜对了2个。');
@@ -38,13 +44,13 @@ module.exports = {
     testCompareAnswerEnglishOnlyThreeMatched:function(test){
     	var result = this.guessModule.compareAnswer("test","tes");
         test.equals(result.message, '总共4个字，你只猜对了3个。');
-        test.equals(result.similarity, (3/4) * 0.5);
+        test.equals(result.similarity, (3/4) * 0.5 + (3/4) * 0.5);
         test.done();
     },
     testCompareAnswerAllCharMatchedButSequenceWithDuplicateChar:function(test){
     	var result = this.guessModule.compareAnswer("test","tets");
         test.equals(result.message, '总共4个字，你全猜对了，但顺序不对。');
-        test.equals(result.similarity, (4/4) * 0.5);
+        test.equals(result.similarity, (4/4) * 0.5 + (2/4)*0.5);
         test.done();
     }
     

@@ -100,11 +100,28 @@ var compareAnswer = function(correctAnswer, guessAnswer) {
 	// split string into array
 	var correctArray = correctAnswer.split('');
 	var guessArray = guessAnswer.split('');
+	
+	var guessIndex = 0;
+	var correctIndex = 0;
+	// check if matched with correct position
+	var matchedWithPositionNum=0;
+	
+	for (guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
+		var element = guessArray[guessIndex];
+
+		for (correctIndex = 0; correctIndex < correctArray.length; correctIndex++) {
+			var correctElement = correctArray[correctIndex];
+			if (element === correctElement && guessIndex == correctIndex ) {
+				matchedWithPositionNum=matchedWithPositionNum+1;
+				break;
+			}
+		}
+	}
 
 	var matchedCharNum = 0;
 
-	var guessIndex = 0;
-	var correctIndex = 0;
+	guessIndex = 0;
+	correctIndex = 0;
 
 	for (guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
 		var element = guessArray[guessIndex];
@@ -126,14 +143,14 @@ var compareAnswer = function(correctAnswer, guessAnswer) {
 	}else  if (matchedCharNum === correctAnswer.length) {
 		return {
 			message : "总共" + correctAnswer.length + "个字，你全猜对了，但顺序不对。",
-			similarity : (matchedCharNum / correctAnswer.length) * 0.5
+			similarity : (matchedCharNum / correctAnswer.length) * 0.5 + (matchedWithPositionNum/correctAnswer.length)*0.5
 		};
 	} else {
 
 		return {
 			message : "总共" + correctAnswer.length + "个字，你只猜对了" + matchedCharNum
 					+ "个。",
-			similarity : (matchedCharNum / correctAnswer.length) * 0.5
+			similarity : (matchedCharNum / correctAnswer.length) * 0.5 + (matchedWithPositionNum/correctAnswer.length)*0.5
 		};
 	}
 }
