@@ -101,15 +101,13 @@ var compareAnswer = function(correctAnswer, guessAnswer) {
 	var correctArray = correctAnswer.split('');
 	var guessArray = guessAnswer.split('');
 	
-	var guessIndex = 0;
-	var correctIndex = 0;
 	// check if matched with correct position
 	var matchedWithPositionNum=0;
 	
-	for (guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
+	for (var guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
 		var element = guessArray[guessIndex];
 
-		for (correctIndex = 0; correctIndex < correctArray.length; correctIndex++) {
+		for (var correctIndex = 0; correctIndex < correctArray.length; correctIndex++) {
 			var correctElement = correctArray[correctIndex];
 			if (element === correctElement && guessIndex == correctIndex ) {
 				matchedWithPositionNum=matchedWithPositionNum+1;
@@ -120,13 +118,11 @@ var compareAnswer = function(correctAnswer, guessAnswer) {
 
 	var matchedCharNum = 0;
 
-	guessIndex = 0;
-	correctIndex = 0;
 
-	for (guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
+	for (var guessIndex = 0; guessIndex < guessArray.length; guessIndex++) {
 		var element = guessArray[guessIndex];
 
-		for (correctIndex = 0; correctIndex < correctArray.length; correctIndex++) {
+		for (var correctIndex = 0; correctIndex < correctArray.length; correctIndex++) {
 			var correctElement = correctArray[correctIndex];
 			if (element === correctElement) {
 				matchedCharNum = matchedCharNum + 1;
