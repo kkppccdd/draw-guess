@@ -3,7 +3,6 @@
  */
 
 var express = require('express')
-  , routes = require('./routes')
   , ejs=require("ejs")
   , http = require('http')
   , path = require('path')
