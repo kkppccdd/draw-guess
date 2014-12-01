@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-	<link rel="stylesheet" href="http://ajax.aspnetcdn.com/ajax/jquery.mobile/1.2.0/jquery.mobile-1.2.0.min.css" />
+	<link rel="stylesheet" href="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.css" />
 	<link rel="stylesheet" href="/lib/jquery.mobile.simpledialog.min.css" />
 	<style type="text/css">
 	li.guess > span {
@@ -26,10 +26,114 @@
 		display:block;
 	}
 	</style>
-	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"></script>
-	<script src="http://ajax.aspnetcdn.com/ajax/jquery.mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
+	<script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
+	<script src="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.js"></script>
 	<script src="/lib/jquery.mobile.simpledialog2.min.js"></script>
+	<script src="/lib/jquery.cookie.js" ></script>
+	
 	<script type="text/javascript">
+	dojoConfig = {
+		async: true,
+		parseOnLoad: false
+	};
+	</script>
+    <script type="text/javascript" src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
+  
+	<script src="/js/common.js" ></script>
+	<script type="text/javascript">
+	var question={
+			id:"<%=question._id %>"
+	}
+	var guessStore;
+	require(["dojo/store/JsonRest"],function(JsonRest){
+		guessStore=new JsonRest({
+			target:"/data/guess",
+			sortParam:"sortBy"
+		});
+		guessStore.current=0;
+		guessStore.fetchBatchSize=10;
+		guessStore.fetch=function(query,batchSize){
+			batchSize=batchSize||this.fetchBatchSize;
+			query.skip=this.current;
+			query.limit=batchSize;
+			var result = this.query(query);
+			this.current=this.current+batchSize;
+			
+			
+			return result;
+		};
+		addMore($.mobile.activePage);
+	});
+	/* create scrollstop handler function */
+	function checkScroll() {
+	    /* You always need this in order to target
+	       elements within active page */
+	    var activePage = $.mobile.activePage,
+	 
+	        /* Viewport's height */
+	        screenHeight = $.mobile.getScreenHeight(),
+	 
+	        /* Content div - include padding too! */
+	        contentHeight = $(".ui-content", activePage).outerHeight(),
+	 
+	        /* Height of scrolled content (invisible) */
+	        scrolled = $(window).scrollTop(),
+	 
+	        /* Height of both Header & Footer and whether they are fixed
+	           If any of them is fixed, we will remove (1px)
+	           If not, outer height is what we need */
+	        header = $(".ui-header", activePage).outerHeight() - 1,
+	        footer = $(".ui-footer", activePage).outerHeight() - 1,
+	 
+	        /* Math 101 - Window's scrollTop should
+	           match content minus viewport plus toolbars */
+	        scrollEnd = contentHeight - screenHeight + header + footer;
+	 
+	    /* if (pageX) is active and page's bottom is reached
+	       load more elements  */
+	    if (activePage[0].id == "home" && scrolled >= scrollEnd) {
+	        /* run loadMore function */
+	        addMore(activePage);
+	    }
+	}
+	function addMore(page) {
+		  /* remove scrollstop event listener */
+		  $(document).off("scrollstop");
+		 
+		  /* show loader (optional) */
+		  $.mobile.loading("show", {
+		    text: "loading more..",
+		    textVisible: true
+		  });
+		 
+		  /* delay loading elements 500ms
+		     and then re-attach scrollstop */
+		  setTimeout(function() {
+		    //
+		    console.debug("load more");
+		    guessStore.fetch({criteria:JSON.stringify({questionId:question.id,similarity:{$lt:1.0}})},10).then(function(data){
+		    	console.debug(data);
+			    var output="";
+			    for(var i=0;i<data.length;i++){
+					var guess = data[i];
+					output += '<li class="guess">';
+					output += '<img src="/image/anonymous_avatar.png"/>';
+					output += '<h1>猜：'+guess.answer+'</h1>';
+					output += '<span>准确度：'+(guess.similarity*100)+'%</span>';
+					output += '<p>'+guess.assessment+'</p>';
+					output += '</li>';
+				}
+			    
+			    $("#guessList", page).append(output).listview("refresh");
+			    $.mobile.loading("hide");
+			 
+			    if(data.length>0){
+			    /* re-attach scrollstop */
+			    	$(document).on("scrollstop", checkScroll);
+			    }
+		    });
+		  }, 500);
+		}
 	// link the new button with newCanvas() function
 	$(document).ready(function() {
 		$("#draw").click(function() {
@@ -56,6 +160,7 @@
 			        	  return false;
 			          }
 			          document.guessForm.elements['answer'].value=answer;
+			          document.guessForm.elements['userId'].value=me.firecloud.common.getUserId();
 			          document.guessForm.submit();
 			          }
 			        }
@@ -63,33 +168,15 @@
 			    })
 			}
 			);
-		$.get("/data/guess",{
-			criteria:'{"questionId":"<%=question._id%>","similarity":{"$lt":1.0}}',
-			sort:'{"timestamp":-1}',
-			skip:0,
-			limit:50
-		},function(data){
-			console.log(data);
-			var output = '<ul data-role="listview">';
-			for(var i=0;i<data.length;i++){
-				var guess = data[i];
-				output += '<li class="guess">';
-				output += '<img src="/image/anonymous_avatar.png"/>';
-				output += '<h1>猜：'+guess.answer+'</h1>';
-				output += '<span>准确度：'+(guess.similarity*100)+'%</span>';
-				output += '<p>'+guess.assessment+'</p>';
-				output += '</li>';
-			}
-			output += '</ul>';
-			$('#guessList').html(output);
-			$('#guessList').trigger('create');
-			$.mobile.loading("hide");
-		},"json");
+		
+		
+		/* attach if scrollstop for first time */
+		$(document).on("scrollstop", checkScroll);
 	});
 </script>
 </head>
 <body>
-	<div data-role="page" id="page1">
+	<div data-role="page" id="home">
 		<div data-theme="b" data-role="header" data-position="fixed">
 			<h3>我画你猜</h3>
 			<a id="draw" data-role="button" data-theme="b" class="ui-btn-left">画</a>
@@ -130,6 +217,7 @@
 		<form style="display:none;" id="guessForm" name="guessForm" action="/page/question/<%=question._id %>.html" method="post" enctype="application/x-www-form-urlencoded">
 			<input name="questionId" value="<%=question._id %>" type="hidden"/>
 			<input name="answer" value="" type="hidden"/>
+			<input name="userId" value="" type="hidden"/>
 		</form>
 	</div>
 </body>

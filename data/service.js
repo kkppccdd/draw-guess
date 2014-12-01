@@ -50,8 +50,9 @@ module.exports = (function() {
 			var modelName=req.params.modelName;
 			var criteria =JSON.parse(req.query.criteria || '{}');
 			var sort = JSON.parse(req.query.sort || '{}');
-			var limit = parseInt(req.query.limit || '10');
+			var limit = parseInt(req.query.limit || '100');
 			var skip = parseInt(req.query.skip || '0');
+			console.log(JSON.stringify(criteria));
 			db.collection(modelName).find(criteria).sort(sort).skip(skip).limit(limit).toArray(function(err, items) {
 				  assert.ok(err == null);
 				  res.json(items);

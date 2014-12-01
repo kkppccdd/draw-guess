@@ -11,6 +11,7 @@
 	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"></script>
 	<script src="http://ajax.aspnetcdn.com/ajax/jquery.mobile/1.2.0/jquery.mobile-1.2.0.min.js"></script>
 	<script src="/lib/jquery.mobile.simpledialog2.min.js" ></script>
+	<script src="/lib/jquery.cookie.js" ></script>
 	<script src="/lib/canvas-to-blob.min.js" ></script>
 	<script src="/lib/s3upload.js" ></script>
     <style type="text/css">
@@ -92,17 +93,9 @@ width: 100%;
     opacity: 0.7;
 }
     </style>
+    <script src="/js/common.js" ></script>
 	<script type="text/javascript">
 	
-	function generateUUID(){
-	    var d = new Date().getTime();
-	    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-	        var r = (d + Math.random()*16)%16 | 0;
-	        d = Math.floor(d/16);
-	        return (c=='x' ? r : (r&0x7|0x8)).toString(16);
-	    });
-	    return uuid;
-	};
 	
 	function showModal(){
 		  $("body").append('<div class="modalWindow"/>');
@@ -197,7 +190,7 @@ $(document).ready(function () {
 		        	            console.debug(imageBlob);
 		        	            
 		        	            var s3Uploader = new S3Upload({
-		        	            	s3_object_name:generateUUID()+".png",
+		        	            	s3_object_name:me.firecloud.common.generateUUID()+".png",
 		        	            	onProgress: function(percent, message) {
 		        	                    console.debug('Upload progress: ' + percent + '% ' + message);
 		        	                },
@@ -208,6 +201,7 @@ $(document).ready(function () {
 		        	                   // post question
 		        	                   
 		        	                   var question = {
+		        	                		   userId:me.firecloud.common.getUserId(),
 		        	                		   imageUrl:public_url,
 		        	                		   answer:answer,
 		        	                		   correct:0,

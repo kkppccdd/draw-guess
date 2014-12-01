@@ -1,0 +1,329 @@
+<!doctype html>
+<html>
+<head>
+    <title>我画你猜</title>
+    <!-- prevent cache -->
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="pragma" content="no-cache">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <style>
+    .tool-case {
+		width:260px;
+		margin:auto;
+		text-align:center;
+	  }
+	  .tool-box {
+		float:left;
+		padding:2px 6px 2px 6px;
+	  }
+	  .tool {
+		border:2px solid #777;
+		height:36px;
+		width:36px;
+	  }
+	  .color-card{
+	  	height:64px;
+		width:64px;
+		}
+	  .red{
+		background-color:#FF0000;
+	  }
+	  .blue{
+		background-color:#0000FF;
+	  }
+	  .green{
+		background-color:#00FF00;
+	  }
+	  .yellow{
+	  	background-color:#FFFF00;
+	  }
+	  .aqua{
+	  	background-color:#00FFFF;
+	  }
+	  .fuchsia{
+	  	background-color:#FF00FF;
+	  }
+	  .silver{
+	  	background-color:#C0C0C0;
+	  }
+	  
+	  .white{
+		background-color:#fff;
+	  }
+	  .black{
+		background-color:#000000;
+		border:2px dashed #fff;
+	  }
+    </style>
+    
+	<script src="/lib/canvas-to-blob.min.js" ></script>
+	<script src="/lib/s3upload.js" ></script>
+	<!-- dynamically apply native visual theme according to the browser user agent -->
+    <script type="text/javascript" src="//ajax.useso.com/ajax/libs/dojo/1.10.2/dojox/mobile/deviceTheme.js"></script>
+    
+	<script type="text/javascript">
+	dojoConfig = {
+		async: true,
+		parseOnLoad: false
+	};
+	</script>
+    <script type="text/javascript" src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
+	
+	<script type="text/javascript">
+	// prototype to	start drawing on touch using canvas moveTo and lineTo
+	var drawTouch = function() {
+		var start = function(e) {
+	        e = e.originalEvent;
+			ctx.beginPath();
+			x = e.changedTouches[0].pageX;
+			y = e.changedTouches[0].pageY-44;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			e.preventDefault();
+	        e = e.originalEvent;
+			x = e.changedTouches[0].pageX;
+			y = e.changedTouches[0].pageY-44;
+			draw(x,y);
+		};
+		require(['dojo/on'],function(on){
+			on(document.getElementById("canvas"),"touchstart", start);
+			on(document.getElementById("canvas"),"touchmove", move);
+		});
+	}; 
+	    
+	// prototype to	start drawing on pointer(microsoft ie) using canvas moveTo and lineTo
+	var drawPointer = function() {
+		var start = function(e) {
+	        e = e.originalEvent;
+			ctx.beginPath();
+			x = e.pageX;
+			y = e.pageY-44;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			e.preventDefault();
+	        e = e.originalEvent;
+			x = e.pageX;
+			y = e.pageY-44;
+			draw(x,y);
+	    };
+	    
+	    require(['dojo/on'],function(on){
+			on(document.getElementById("canvas"),"MSPointerDown", start);
+			on(document.getElementById("canvas"),"MSPointerMove", move);
+		});
+	};        
+
+	// prototype to	start drawing on mouse using canvas moveTo and lineTo
+	var drawMouse = function() {
+		var clicked = 0;
+		var start = function(e) {
+			clicked = 1;
+			ctx.beginPath();
+			x = e.pageX;
+			y = e.pageY-44;
+			ctx.moveTo(x,y);
+		};
+		var move = function(e) {
+			if(clicked){
+				x = e.pageX;
+				y = e.pageY-44;
+				draw(x,y);
+			}
+		};
+		var stop = function(e) {
+			clicked = 0;
+		};
+		require(['dojo/on'],function(on){
+			on(document.getElementById("canvas"),"mousedown", start);
+			on(document.getElementById("canvas"),"mousemove", move);
+			on(window,"mouseup", stop);
+		});
+	};
+
+	/*********
+	 * draw functions
+	 */
+
+	 
+	 var smallPenDraw=function(x,y){
+		 ctx.lineWidth = 1;	
+		 ctx.strokeStyle=color;
+		 ctx.lineTo(x,y);
+		 ctx.stroke();
+	}
+
+	 var mediumPenDraw=function(x,y){
+		 ctx.lineWidth = 5;	
+		 ctx.strokeStyle=color;
+		 ctx.lineTo(x,y);
+		 ctx.stroke();
+	}
+	 
+	 var eraserDraw=function(x,y){
+		 ctx.lineWidth = 8;	
+		 ctx.strokeStyle="#FFFFFF";
+		 ctx.lineTo(x,y);
+		 ctx.stroke();
+	}
+
+	var crayonDraw=function(x,y){
+		var v = 2;//this.subtract(this._latest);//当前点与下一个点的距离的横纵坐标 
+	    var s = Math.ceil(5 / 2);		//算出粒子的单位长度
+	    var stepNum = Math.floor(v.length() / s) + 1;	//算出步长  v.length()为斜线长度
+	    v.normalize(s);//当前点与下一个点的
+		
+		
+		
+	    var sep = 1.5; // 分割数  控制画笔的浓密程度  关键所在
+		//粒子的大小 根据画笔描绘的速度（画笔的停留时间）进行调整
+	    var dotSize = sep * Math.min(10 / 1 * 3, 1);
+	    var dotNum = Math.ceil(this.size * sep);
+		/**debug调试
+	    log(stepNum);
+		log(dotNum);
+		log(dotSize);
+		**/
+		
+	    var range = this.size / 2;
+	    var i, j, p, r, c, x, y;
+	    
+	    for (i = 0; i < dotNum; i++) {
+			for (j = 0; j < stepNum; j++) {
+				p = this._latest.add(v.scale(j));
+				r = random(range);
+				c = random(Math.PI * 2);
+				w = random(dotSize, dotSize / 2);
+				h = random(dotSize, dotSize / 2);
+				x = p.x + r * Math.sin(c) - w / 2;
+				y = p.y + r * Math.cos(c) - h / 2;
+				ctx.rect(x, y, w, h);
+				//ctx.arc(x,y,w,0,Math.PI * 2,true);
+			}
+		}
+	    
+	    ctx.fill();
+	    ctx.restore();
+	}
+
+	 var draw=smallPenDraw;
+	 var ctx, color = "#000";
+	//function to setup a new canvas for drawing
+	function newCanvas(){
+		require(['dojo/query','dojo/NodeList-dom','dojo/on'],function(query,dom,on){
+			//define and resize canvas
+			query("#content").forEach(function(node){
+
+			    var canvas = '<canvas id="canvas" width="'+window.innerWidth+'" height="'+(window.innerHeight-90)+'"></canvas>';
+			    node.innerHTML =canvas;
+			}).style('height',window.innerHeight-90);
+			
+			
+		    
+		    // setup canvas
+			ctx=document.getElementById("canvas").getContext("2d");
+			
+			// set init value
+			
+			// choose smal pen by default
+			query(".small-pen").forEach(function(node){
+				on.emit(node, "click", {
+			        bubbles: true,
+			        cancelable: true
+			    });
+			});
+			// choose color black by default
+			query(".black").forEach(function(node){
+				on.emit(node, "click", {
+			        bubbles: true,
+			        cancelable: true
+			    });
+			});
+			
+			//init event handler
+			query(".tool").forEach(function(node){
+				on(node,"click",function(e){
+					// 
+					query(".tool").style("border-color", "#777");
+					query(".tool").style("border-style", "solid");
+					
+					require(['dojo/dom-style'],function(domStyle){
+						domStyle.set(e.target,"border-color", "#fff");
+						domStyle.set(e.target,"border-style", "dashed");
+					});
+				});
+			});
+		
+			
+			// setup to trigger drawing on mouse or touch
+			drawTouch();
+			drawPointer();
+			drawMouse();
+		});
+		
+	}
+	</script>
+	
+	<script type="text/javascript">
+	require([
+	     	"dojox/mobile/parser",
+	     	"dojox/mobile/compat",
+	     	"dojo/domReady!",
+	     	"dojox/mobile/View",
+	    	"dojox/mobile/Heading"
+	     ], function (parser) {
+	     	// now parse the page for widgets
+	     	parser.parse();
+	     	
+	     	// setup a new canvas for drawing wait for device init
+	        setTimeout(function(){
+	    	   newCanvas();
+	        }, 1000);
+	     });
+	</script>
+</head>
+<body style="visibility:hidden;">
+<!-- the view or "page"; select it as the "draw" screen -->
+<div id="draw" data-dojo-type="dojox/mobile/View" data-dojo-props="selected:true">
+<h1 data-dojo-type="dojox/mobile/Heading">我画你猜</h1>
+<div id="content"><p style="text-align:center">Loading Canvas...</p></div>
+<h1 data-dojo-type="dojox.mobile.Heading" fixed="bottom">
+<div class="tool-case">
+			<div class="tool-box">
+				<div class="tool small-pen">
+					<image src="/image/pen-small.png" height="36px"/>
+				</div>
+			</div>	
+			<div class="tool-box">
+				<div class="tool medium-pen">
+					<image src="/image/medium-pen.png" height="36px"/>
+				</div>
+			</div>
+			<div class="tool-box">
+				<div class="tool eraser">
+					<image src="/image/eraser.png" height="36px"/>
+				</div>
+			</div>
+			<div class="tool-box">
+			
+			
+			</div>
+		</div>
+</h1>
+</div>
+</body>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-57001672-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</html>

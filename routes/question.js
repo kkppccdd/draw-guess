@@ -30,6 +30,7 @@ module.exports = (function() {
 	questionHandler.post("/:id.html", function(req, res, next) {
 		var id = req.param("questionId", null);
 		var guessAnswer = req.param("answer", null);
+		var userId =req.param("userId",null);
 		// load
 		db.collection("question").findById(
 				id,
@@ -40,7 +41,8 @@ module.exports = (function() {
 						answer : guessAnswer,
 						assessment : result.message,
 						similarity : result.similarity,
-						timestamp:new Date()
+						timestamp:new Date(),
+						userId:userId
 					};
 					// save guess
 					db.collection("guess").insert(guess, function(err, result) {

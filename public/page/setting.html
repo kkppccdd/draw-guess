@@ -1,0 +1,387 @@
+<!doctype html>
+<html>
+<head>
+<title>我画你猜</title>
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<!-- prevent cache -->
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="pragma" content="no-cache">
+<link rel="stylesheet"
+	href="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.css" />
+<style type="text/css">
+.question img {
+	max-width: none;
+}
+</style>
+<script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
+<script
+	src="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.js"></script>
+<script src="/lib/jquery.cookie.js"></script>
+<script type="text/javascript">
+	dojoConfig = {
+		async : true,
+		parseOnLoad : false
+	};
+</script>
+<script type="text/javascript"
+	src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
+<script src="/js/common.js"></script>
+<script type="text/javascript">
+	//global variables
+	var questionStore;
+	var guessStore;
+	/* create scrollstop handler function */
+	function checkScroll() {
+		/* You always need this in order to target
+		   elements within active page */
+		var activePage = $.mobile.activePage,
+
+		/* Viewport's height */
+		screenHeight = $.mobile.getScreenHeight(),
+
+		/* Content div - include padding too! */
+		contentHeight = $(".ui-content", activePage).outerHeight(),
+
+		/* Height of scrolled content (invisible) */
+		scrolled = $(window).scrollTop(),
+
+		/* Height of both Header & Footer and whether they are fixed
+		   If any of them is fixed, we will remove (1px)
+		   If not, outer height is what we need */
+		header = $(".ui-header", activePage).outerHeight() - 1, footer = $(
+				".ui-footer", activePage).outerHeight() - 1,
+
+		/* Math 101 - Window's scrollTop should
+		   match content minus viewport plus toolbars */
+		scrollEnd = contentHeight - screenHeight + header + footer;
+
+		/* if (pageX) is active and page's bottom is reached
+		   load more elements  */
+		if (activePage[0].id == "myQuestionPage" && scrolled >= scrollEnd) {
+			addMoreQuestion(me.firecloud.common.getUserId());
+		}
+	}
+
+	require([ "dojo/store/JsonRest" ], function(JsonRest) {
+		questionStore = new JsonRest({
+			target : "/data/question",
+			sortParam : "sortBy"
+		});
+		questionStore.current = 0;
+		questionStore.fetchBatchSize = 10;
+		questionStore.fetch = function(query, batchSize) {
+			batchSize = batchSize || this.fetchBatchSize;
+			query.skip = this.current;
+			query.limit = batchSize;
+			var result = this.query(query);
+			this.current = this.current + batchSize;
+
+			return result;
+		};
+		questionStore.reset = function() {
+			this.current = 0;
+		}
+
+		guessStore = new JsonRest({
+			target : "/data/guess",
+			sortParam : "sortBy"
+		});
+		guessStore.current = 0;
+		guessStore.fetchBatchSize = 10;
+		guessStore.fetch = function(query, batchSize) {
+			batchSize = batchSize || this.fetchBatchSize;
+			query.skip = this.current;
+			query.limit = batchSize;
+			var result = this.query(query);
+			this.current = this.current + batchSize;
+
+			return result;
+		};
+		guessStore.reset = function() {
+			this.current = 0;
+		}
+	});
+</script>
+<script type="text/javascript">
+	$(document).ready(
+			function() {
+				$("a[data-role=tab]").each(function() {
+					var anchor = $(this);
+					anchor.bind("click", function() {
+						$.mobile.changePage(anchor.attr("href"), {
+							transition : "none",
+							changeHash : false
+						});
+						return false;
+					});
+				});
+
+				$("div[data-role=page]").bind("pagebeforeshow",
+						function(e, data) {
+							$.mobile.silentScroll(0);
+							$.mobile.changePage.defaults.transition = 'slide';
+						});
+
+				$("div[id=myQuestionPage]").bind("pageshow", function(e, data) {
+					var userId = me.firecloud.common.getUserId();
+					console.debug("show question of user:" + userId);
+
+					resetMyQuestionList();
+					addMoreQuestion(userId);
+				});
+
+				$("div[id=allGuessListPage]").bind(
+						"pageshow",
+						function(e, data) {
+							var questionId = sessionStorage.questionId;
+							console.debug("show all guess for question:"
+									+ sessionStorage.questionId);
+							resetGuessList();
+							addMoreGuess(questionId);
+						});
+			});
+
+	// function
+	var resetMyQuestionList = function() {
+		questionStore.reset();
+		$("#questionList", $.mobile.activePage).children().remove('li');
+	}
+	var addMoreQuestion = function(userId) {
+		// 
+		var page = $.mobile.activePage;
+		/* remove scrollstop event listener */
+		$(document).off("scrollstop");
+
+		/* show loader (optional) */
+		$.mobile.loading("show", {
+			text : "loading more..",
+			textVisible : true
+		});
+
+		/* delay loading elements 500ms
+		   and then re-attach scrollstop */
+		setTimeout(
+				function() {
+					//
+					console.debug("load more");
+					questionStore
+							.fetch({
+								criteria : JSON.stringify({
+									userId : userId
+								})
+							}, 10)
+							.then(
+									function(data) {
+										console.debug(data);
+										var output = "";
+										for (var i = 0; i < data.length; i++) {
+											var question = data[i];
+											output += '<li class="question"><a href="#allGuessListPage" onclick="sessionStorage.questionId=\''+question._id+'\'">';
+											output += '<span class="ui-li-count" data-count-theme="b">'
+													+ (question.wrong + question.correct)
+													+ '</span>';
+											output += '<img src="'+question.imageUrl+'"/>';
+											output += '</li>';
+										}
+
+										$("#questionList", page).append(output)
+												.listview("refresh");
+										$.mobile.loading("hide");
+
+										if (data.length > 0) {
+											/* re-attach scrollstop */
+											$(document).on("scrollstop",
+													checkScroll);
+										}
+									});
+				}, 500);
+	}
+	
+	var resetGuessList=function(){
+		guessStore.reset();
+		$("#allGuessListPage-guessList",$.mobile.activePage).children().remove('li');
+	}
+	
+	var guessRender=function(items){
+		var output = "";
+		for (var i = 0; i < items.length; i++) {
+			var guess = items[i];
+			output += '<li class="guess">';
+			output += '<img src="/image/anonymous_avatar.png" id="'+guess.userId+'" class="avatar"/>';
+			output += '<span class="ui-li-count" data-count-theme="b">'
+					+ (guess.similarity*100)
+					+ '%</span>';
+			output += '猜:'+guess.answer;
+			output += '</li>';
+		}
+		
+		return output;
+	}
+	
+	var addMoreGuess=function(questionId){
+		// 
+		var page = $.mobile.activePage;
+		/* remove scrollstop event listener */
+		$(document).off("scrollstop");
+
+		/* show loader (optional) */
+		$.mobile.loading("show", {
+			text : "loading more..",
+			textVisible : true
+		});
+
+		/* delay loading elements 500ms
+		   and then re-attach scrollstop */
+		setTimeout(
+				function() {
+					//
+					console.debug("load more");
+					guessStore
+							.fetch({
+								criteria : JSON.stringify({
+									questionId : questionId
+								})
+							}, 10)
+							.then(
+									function(data) {
+										console.debug(data);
+										
+
+										$("#allGuessListPage-guessList", page).append(guessRender(data))
+												.listview("refresh");
+										$.mobile.loading("hide");
+
+										if (data.length > 0) {
+											/* re-attach scrollstop */
+											$(document).on("scrollstop",
+													checkScroll);
+										}
+									});
+				}, 500);
+	}
+</script>
+</head>
+<body>
+	<div id="myQuestionPage" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>Page 1</h1>
+		</div>
+		<div data-role="content">
+			<ul id="questionList" data-role="listview">
+			</ul>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#myQuestionPage" data-role="tab" data-icon="grid"
+						class="ui-btn-active">myQuestionPage</a></li>
+					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
+							2</a></li>
+					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
+							3</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div id="page-2" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>Page 2</h1>
+		</div>
+		<div data-role="content">
+			<p>Page 2 content</p>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#myQuestionPage" data-role="tab" data-icon="grid">Page
+							1</a></li>
+					<li><a href="#page-2" data-role="tab" data-icon="grid"
+						class="ui-btn-active">Page 2</a></li>
+					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
+							3</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div id="page-3" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>Page 3</h1>
+		</div>
+		<div data-role="content">
+			<p>Page 3 content</p>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#page-1" data-role="tab" data-icon="grid">Page
+							1</a></li>
+					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
+							2</a></li>
+					<li><a href="#page-3" data-role="tab" data-icon="grid"
+						class="ui-btn-active">Page 3</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<!-- guess list page, show guess list of question sessionStorage.questionId-->
+	<div id="allGuessListPage" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>Page 3</h1>
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#allGuessListPage"
+						class="ui-btn-active ui-state-persist">All</a></li>
+					<li><a href="#correctGuessListPage">Correct</a></li>
+				</ul>
+			</div>
+		</div>
+		<div data-role="content">
+			<ul id="allGuessListPage-guessList" data-role="listview">
+			</ul>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#page-1" data-role="tab" data-icon="grid"
+						class="ui-btn-active">Page 1</a></li>
+					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
+							2</a></li>
+					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
+							3</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</body>
+<!-- web analytic code -->
+<script>
+	(function(i, s, o, g, r, a, m) {
+		i['GoogleAnalyticsObject'] = r;
+		i[r] = i[r] || function() {
+			(i[r].q = i[r].q || []).push(arguments)
+		}, i[r].l = 1 * new Date();
+		a = s.createElement(o), m = s.getElementsByTagName(o)[0];
+		a.async = 1;
+		a.src = g;
+		m.parentNode.insertBefore(a, m)
+	})(window, document, 'script', '//www.google-analytics.com/analytics.js',
+			'ga');
+
+	ga('create', 'UA-57001672-1', 'auto');
+	ga('send', 'pageview');
+</script>
+</html>
