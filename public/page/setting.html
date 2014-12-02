@@ -62,6 +62,10 @@
 		   load more elements  */
 		if (activePage[0].id == "myQuestionPage" && scrolled >= scrollEnd) {
 			addMoreQuestion(me.firecloud.common.getUserId());
+		}else if(activePage[0].id == "allGuessListPage" && scrolled >= scrollEnd){
+			addMoreGuess(sessionStorage.questionId);
+		}else if(activePage[0].id == "correctGuessListPage" && scrolled >= scrollEnd){
+			addMoreCorrectGuess(sessionStorage.questionId);
 		}
 	}
 
@@ -141,6 +145,15 @@
 									+ sessionStorage.questionId);
 							resetGuessList();
 							addMoreGuess(questionId);
+						});
+				$("div[id=correctGuessListPage]").bind(
+						"pageshow",
+						function(e, data) {
+							var questionId = sessionStorage.questionId;
+							console.debug("show correct guess for question:"
+									+ sessionStorage.questionId);
+							resetCorrectGuessList();
+							addMoreCorrectGuess(questionId);
 						});
 			});
 
@@ -242,7 +255,8 @@
 					guessStore
 							.fetch({
 								criteria : JSON.stringify({
-									questionId : questionId
+									questionId : questionId,
+									similarity:{$lt:1.0}
 								})
 							}, 10)
 							.then(
@@ -261,7 +275,55 @@
 										}
 									});
 				}, 500);
-	}
+	};
+	
+	var resetCorrectGuessList=function(){
+		guessStore.reset();
+		$("#correctGuessListPage-guessList",$.mobile.activePage).children().remove('li');
+	};
+	
+	var addMoreCorrectGuess=function(questionId){
+		// 
+		var page = $.mobile.activePage;
+		/* remove scrollstop event listener */
+		$(document).off("scrollstop");
+
+		/* show loader (optional) */
+		$.mobile.loading("show", {
+			text : "loading more..",
+			textVisible : true
+		});
+
+		/* delay loading elements 500ms
+		   and then re-attach scrollstop */
+		setTimeout(
+				function() {
+					//
+					console.debug("load more");
+					guessStore
+							.fetch({
+								criteria : JSON.stringify({
+									questionId : questionId,
+									similarity:1.0
+								})
+							}, 10)
+							.then(
+									function(data) {
+										console.debug(data);
+										
+
+										$("#correctGuessListPage-guessList", page).append(guessRender(data))
+												.listview("refresh");
+										$.mobile.loading("hide");
+
+										if (data.length > 0) {
+											/* re-attach scrollstop */
+											$(document).on("scrollstop",
+													checkScroll);
+										}
+									});
+				}, 500);
+	};
 </script>
 </head>
 <body>
@@ -351,6 +413,35 @@
 		</div>
 		<div data-role="content">
 			<ul id="allGuessListPage-guessList" data-role="listview">
+			</ul>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#page-1" data-role="tab" data-icon="grid"
+						class="ui-btn-active">Page 1</a></li>
+					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
+							2</a></li>
+					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
+							3</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div id="correctGuessListPage" data-role="page">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>Page 3</h1>
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#allGuessListPage">All</a></li>
+					<li><a href="#correctGuessListPage" class="ui-btn-active ui-state-persist">Correct</a></li>
+				</ul>
+			</div>
+		</div>
+		<div data-role="content">
+			<ul id="correctGuessListPage-guessList" data-role="listview">
 			</ul>
 		</div>
 		<div data-role="footer" data-position="fixed">
