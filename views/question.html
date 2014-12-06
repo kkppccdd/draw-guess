@@ -1,234 +1,349 @@
 <!doctype html>
 <html>
 <head>
-<title>我画你猜</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-	<link rel="stylesheet" href="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.css" />
-	<link rel="stylesheet" href="/lib/jquery.mobile.simpledialog.min.css" />
-	<style type="text/css">
-	li.guess > span {
-		color: grey;
-		font-size: xx-small;
-	}
-	li.guess > p {
-		padding-top:10px;
-		padding-left:20px;
-		white-space:normal;
-	}
-	.guess-result {
-		border: 1px solid #ccc;
-		background: #eee;
-	}
-	.question-image{
-		width:100%;
-		display:block;
-	}
-	</style>
-	<script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
-	<script src="http://libs.useso.com/js/jquery-mobile/1.2.0/jquery.mobile.min.js"></script>
-	<script src="/lib/jquery.mobile.simpledialog2.min.js"></script>
-	<script src="/lib/jquery.cookie.js" ></script>
-	
-	<script type="text/javascript">
+<!-- generate title conditionally -->
+<% if (locals.guess){ if(guess.similarity === 1.0){ %>
+<!-- successful guess -->
+<title>我画你猜 - 我猜对了！！！</title> <% }else{ %>
+<!-- failed guess -->
+<title>我画你猜 - 没猜中～～</title> <% }}else{ %>
+<title>我画你猜 - 快来猜猜</title> <% } %>
+
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet"
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.css" />
+<style type="text/css">
+li.guess>span {
+	color: grey;
+	font-size: xx-small;
+}
+
+li.guess>p {
+	padding-top: 10px;
+	padding-left: 20px;
+	white-space: normal;
+}
+
+.guess-result {
+	border: 1px solid #ccc;
+	background: #eee;
+}
+
+.question-image {
+	width: 100%;
+	display: block;
+}
+</style>
+<script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
+<script
+	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
+<script src="/lib/jquery.cookie.js"></script>
+
+<script type="text/javascript">
 	dojoConfig = {
-		async: true,
-		parseOnLoad: false
+		async : true,
+		parseOnLoad : false
 	};
-	</script>
-    <script type="text/javascript" src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
-  
-	<script src="/js/common.js" ></script>
-	<script type="text/javascript">
-	var question={
+</script>
+<script type="text/javascript"
+	src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
+
+<script src="/js/common.js"></script>
+<script type="text/javascript">
+var locals = {
+		question: {
 			id:"<%=question._id %>"
+		}
+};
+
+<% if(locals.guess){ %>
+locals.guess = {
+	similarity:<%=guess.similarity %>,
+	assessment:"<%=guess.assessment %>"
+};
+<% } %>
+
+</script>
+<script type="text/javascript">
+	var question = {
+		id : "<%=question._id %>"
 	}
 	var guessStore;
-	require(["dojo/store/JsonRest"],function(JsonRest){
-		guessStore=new JsonRest({
-			target:"/data/guess",
-			sortParam:"sortBy"
+	require([ "dojo/store/JsonRest" ], function(JsonRest) {
+		guessStore = new JsonRest({
+			target : "/data/guess",
+			sortParam : "sortBy"
 		});
-		guessStore.current=0;
-		guessStore.fetchBatchSize=10;
-		guessStore.fetch=function(query,batchSize){
-			batchSize=batchSize||this.fetchBatchSize;
-			query.skip=this.current;
-			query.limit=batchSize;
+		guessStore.current = 0;
+		guessStore.fetchBatchSize = 10;
+		guessStore.fetch = function(query, batchSize) {
+			batchSize = batchSize || this.fetchBatchSize;
+			query.skip = this.current;
+			query.limit = batchSize;
 			var result = this.query(query);
-			this.current=this.current+batchSize;
-			
-			
+			this.current = this.current + batchSize;
+
 			return result;
 		};
 		addMore($.mobile.activePage);
 	});
 	/* create scrollstop handler function */
 	function checkScroll() {
-	    /* You always need this in order to target
-	       elements within active page */
-	    var activePage = $.mobile.activePage,
-	 
-	        /* Viewport's height */
-	        screenHeight = $.mobile.getScreenHeight(),
-	 
-	        /* Content div - include padding too! */
-	        contentHeight = $(".ui-content", activePage).outerHeight(),
-	 
-	        /* Height of scrolled content (invisible) */
-	        scrolled = $(window).scrollTop(),
-	 
-	        /* Height of both Header & Footer and whether they are fixed
-	           If any of them is fixed, we will remove (1px)
-	           If not, outer height is what we need */
-	        header = $(".ui-header", activePage).outerHeight() - 1,
-	        footer = $(".ui-footer", activePage).outerHeight() - 1,
-	 
-	        /* Math 101 - Window's scrollTop should
-	           match content minus viewport plus toolbars */
-	        scrollEnd = contentHeight - screenHeight + header + footer;
-	 
-	    /* if (pageX) is active and page's bottom is reached
-	       load more elements  */
-	    if (activePage[0].id == "home" && scrolled >= scrollEnd) {
-	        /* run loadMore function */
-	        addMore(activePage);
-	    }
+		/* You always need this in order to target
+		   elements within active page */
+		var activePage = $.mobile.activePage,
+
+		/* Viewport's height */
+		screenHeight = $.mobile.getScreenHeight(),
+
+		/* Content div - include padding too! */
+		contentHeight = $(".ui-content", activePage).outerHeight(),
+
+		/* Height of scrolled content (invisible) */
+		scrolled = $(window).scrollTop(),
+
+		/* Height of both Header & Footer and whether they are fixed
+		   If any of them is fixed, we will remove (1px)
+		   If not, outer height is what we need */
+		header = $(".ui-header", activePage).outerHeight() - 1, footer = $(
+				".ui-footer", activePage).outerHeight() - 1,
+
+		/* Math 101 - Window's scrollTop should
+		   match content minus viewport plus toolbars */
+		scrollEnd = contentHeight - screenHeight + header + footer;
+
+		/* if (pageX) is active and page's bottom is reached
+		   load more elements  */
+		if (activePage[0].id == "home" && scrolled >= scrollEnd) {
+			/* run loadMore function */
+			addMore(activePage);
+		}
 	}
 	function addMore(page) {
-		  /* remove scrollstop event listener */
-		  $(document).off("scrollstop");
-		 
-		  /* show loader (optional) */
-		  $.mobile.loading("show", {
-		    text: "loading more..",
-		    textVisible: true
-		  });
-		 
-		  /* delay loading elements 500ms
-		     and then re-attach scrollstop */
-		  setTimeout(function() {
-		    //
-		    console.debug("load more");
-		    guessStore.fetch({criteria:JSON.stringify({questionId:question.id,similarity:{$lt:1.0}})},10).then(function(data){
-		    	console.debug(data);
-			    var output="";
-			    for(var i=0;i<data.length;i++){
-					var guess = data[i];
-					output += '<li class="guess">';
-					output += '<img src="/image/anonymous_avatar.png"/>';
-					output += '<h1>猜：'+guess.answer+'</h1>';
-					output += '<span>准确度：'+(guess.similarity*100)+'%</span>';
-					output += '<p>'+guess.assessment+'</p>';
-					output += '</li>';
-				}
-			    
-			    $("#guessList", page).append(output).listview("refresh");
-			    $.mobile.loading("hide");
-			 
-			    if(data.length>0){
-			    /* re-attach scrollstop */
-			    	$(document).on("scrollstop", checkScroll);
-			    }
-		    });
-		  }, 500);
+		/* remove scrollstop event listener */
+		$(document).off("scrollstop");
+
+		/* show loader (optional) */
+		$.mobile.loading("show", {
+			text : "loading more..",
+			textVisible : true
+		});
+
+		/* delay loading elements 500ms
+		   and then re-attach scrollstop */
+		setTimeout(
+				function() {
+					//
+					console.debug("load more");
+					guessStore
+							.fetch({
+								criteria : JSON.stringify({
+									questionId : question.id,
+									similarity : {
+										$lt : 1.0
+									}
+								})
+							}, 10)
+							.then(
+									function(data) {
+										console.debug(data);
+										var output = "";
+										for (var i = 0; i < data.length; i++) {
+											var guess = data[i];
+											output += '<li class="guess">';
+											output += '<img src="/image/anonymous_avatar.png"/>';
+											output += '<h1>猜：' + guess.answer
+													+ '</h1>';
+											output += '<span>准确度：'
+													+ (guess.similarity * 100)
+													+ '%</span>';
+											output += '<p>' + guess.assessment
+													+ '</p>';
+											output += '</li>';
+										}
+
+										$("#guessList", page).append(output)
+												.listview("refresh");
+										$.mobile.loading("hide");
+
+										if (data.length > 0) {
+											/* re-attach scrollstop */
+											$(document).on("scrollstop",
+													checkScroll);
+										}
+									});
+				}, 500);
+	}
+	
+	var showShareTip=function(){
+		$("#shareGuide").popup("open",{x:0,y:0});
+		$("#shareGuide > div.ui-popup-arrow-container.ui-popup-arrow-t").css("left","").css("right","10px");
+		$("#shareGuide-popup").css("top","10px").css("left","").css("right","15px");
+		
+		setTimeout(function(){
+			$("#shareGuide").popup("close");
+		},2000);
+	};
+	
+	var showShareConfirmDialog=function(){
+		// populate content of share confirm dialog
+		$("#shareConfirmDialog-assessment").html(locals.guess.assessment+"你还有脸告诉别人么？");
+		
+		// don't share threshold
+		var notShareThreshold=0.5;
+		// decide left button
+		if(Math.random() >notShareThreshold){
+			// share
+			$("#shareConfirmDialog-leftButton").html("我就是没节操");
+			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"check"});
+			$("#shareConfirmDialog-leftButton").click(function(){
+				$("#shareConfirmDialog").popup("close");
+				setTimeout(showShareTip,300);
+			});
+		}else{
+			// not share
+			$("#shareConfirmDialog-leftButton").html("没脸");
+			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"delete"});
+			$("#shareConfirmDialog-leftButton").click(function(){
+				$("#shareConfirmDialog").popup("close");
+			});
 		}
+		
+		// decide right button
+		if(Math.random() >notShareThreshold){
+			// share
+			$("#shareConfirmDialog-rightButton").html("我就是没节操");
+			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"check"});
+			$("#shareConfirmDialog-rightButton").click(function(){
+				$("#shareConfirmDialog").popup("close");
+				setTimeout(showShareTip,300);
+			});
+		}else{
+			// not share
+			$("#shareConfirmDialog-rightButton").html("没脸");
+			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"delete"});
+			$("#shareConfirmDialog-rightButton").click(function(){
+				$("#shareConfirmDialog").popup("close");
+			});
+		}
+		
+    	$("#shareConfirmDialog").popup("open");
+	};
 	// link the new button with newCanvas() function
 	$(document).ready(function() {
 		$("#draw").click(function() {
 			window.location = "/page/draw.html";
 		});
-		
-		$("#guess").click(function(){
+
+		$("#guess").click(function() {
 			// show dialog ask answer
-			$(document).simpledialog2({
-			    mode: 'button',
-			    headerText: '你的答案?',
-			    headerClose: true,
-			    buttonPrompt: '你的答案',
-			    buttonInput: true,
-			    buttons : {
-			      '确定': {
-			        click: function () { 
-			          //
-			          var answer=$.mobile.sdLastInput;
-			          
-			          console.debug("guess:"+answer);
-			          if(answer===""){
-			        	  console.debug("get empty guess.");
-			        	  return false;
-			          }
-			          document.guessForm.elements['answer'].value=answer;
-			          document.guessForm.elements['userId'].value=me.firecloud.common.getUserId();
-			          document.guessForm.submit();
-			          }
-			        }
-			      }
-			    })
+			document.guessForm.reset();
+			$("#guessForm").popup("open");
+		});
+		
+		$("#share").click(function(){
+			// check if is show question 
+			if(locals.guess == undefined){
+				// show share tip
+				showShareTip();
+			}else{
+				if(locals.guess.similarity === 1.0){
+					// show share tip
+					showShareTip();
+				}else{
+					// show confirm dialog
+					showShareConfirmDialog();
+				}
 			}
-			);
-		
-		
+		});
+
+		document.guessForm.userId.value = me.firecloud.common.getUserId();
 		/* attach if scrollstop for first time */
 		$(document).on("scrollstop", checkScroll);
 	});
 </script>
 </head>
 <body>
-	<div data-role="page" id="home">
-		<div data-theme="b" data-role="header" data-position="fixed">
-			<h3>我画你猜</h3>
-			<a id="draw" data-role="button" data-theme="b" class="ui-btn-left">画</a>
-			<div class="ui-btn-right" data-role="controlgroup" data-type="horizontal">
-			<!-- <a id="share" data-role="button" data-theme="b" class="">分享</a>-->
-			<a id="guess" data-role="button" data-theme="b" class="">猜</a>
+	<div data-role="page" id="home" data-theme="b">
+		<div data-role="header" data-position="fixed">
+			<h3></h3>
+			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
+			<div data-role="controlgroup" data-type="horizontal"
+				class="ui-btn-right">
+				<a id="guess"data-role="button" data-icon="check">猜</a>
+				<a id="share" data-role="button" data-icon="star">分享</a>
 			</div>
 		</div>
 		<div id="content" data-role="content">
-		<!-- guess result start-->
-		<% if (locals.guess){ 
-			if(guess.similarity === 1.0){
-		%>
+			<!-- guess result start-->
+			<% if (locals.guess){ if(guess.similarity === 1.0){ %>
 			<div class="guess-result">
-				<h1 style="text-align:center;">恭禧！猜对了！！</h1>
-				<h2 style="text-align:center;">正确答案：<%=guess.answer %></h2>
-				<h2 style="text-align:center;">正确/尝试</h2>
-				<h2 style="text-align:center;"><%=question.correct %>/<%=question.correct+question.wrong %></h2>
+				<h1 style="text-align: center;">恭禧！猜对了！！</h1>
+				<h2 style="text-align: center;">正确答案：<%=guess.answer %></h2>
+				<h2 style="text-align: center;">正确/尝试</h2>
+				<h2 style="text-align: center;"><%=question.correct
+					%>/<%=question.correct+question.wrong %></h2>
 			</div>
-		<%
-			}else{
-		%>
+			<% }else{ %>
 			<div class="guess-result">
-				<h1 style="text-align:center;">猜错了！！</h1>
-				<h2 style="text-align:center;">正确/尝试</h2>
-				<h2 style="text-align:center;"><%=question.correct %>/<%=question.correct+question.wrong %></h2>
+				<h1 style="text-align: center;">猜错了！！</h1>
+				<h2 style="text-align: center;">正确/尝试</h2>
+				<h2 style="text-align: center;"><%=question.correct
+					%>/<%=question.correct+question.wrong %></h2>
 			</div>
-		<% 	}
-		   }
-		 %>
-		<!-- guess result end -->
-			<img src="<%=question.imageUrl%>" class="question-image"/>
-			
-			<ul data-role="listview" id="guessList">
-				
+			<% } } %>
+			<!-- guess result end -->
+			<img src="<%=question.imageUrl%>" class="question-image" />
+
+			<ul data-role="listview" id="guessList" data-theme="c">
+
 			</ul>
 		</div>
-		<form style="display:none;" id="guessForm" name="guessForm" action="/page/question/<%=question._id %>.html" method="post" enctype="application/x-www-form-urlencoded">
-			<input name="questionId" value="<%=question._id %>" type="hidden"/>
-			<input name="answer" value="" type="hidden"/>
-			<input name="userId" value="" type="hidden"/>
-		</form>
+		<div data-role="popup" id="guessForm" class="ui-corner-all">
+			<form name="guessForm"
+				action="/page/question/<%=question._id %>.html" method="POST"
+				enctype="application/x-www-form-urlencoded" data-ajax="false">
+				<div style="padding: 10px 20px;">
+
+					<label for="answer">答案：</label> <input name="answer" value=""
+						type="text" placeholder="答案" /> <input id="" name="userId"
+						value="" type="hidden" /> <input name="questionId"
+						value="<%=question._id %>" type="hidden" />
+					<button type="submit">提交</button>
+				</div>
+			</form>
+		</div>
+		<div data-role="popup" id="shareGuide" class="ui-content" data-theme="a" style="max-width:90%;" data-arrow="t" data-transition="slideup">
+          <p>单击浏览器右上⻆按钮分享</p>
+		</div>
+		<div data-role="popup" id="shareConfirmDialog" class="ui-content" data-theme="a" style="max-width:90%;" data-transition="slideup">
+		<div role="main" class="ui-content">
+          <h3 id="shareConfirmDialog-assessment"></h3>
+          	<a href="#shareConfirmDialog-leftButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-leftButton" data-icon="check">left</a>
+          	<a href="#shareConfirmDialog-rightButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-rightButton" data-icon="check">right</a>
+          	</div>
+		</div>
 	</div>
+
+
 </body>
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	(function(i, s, o, g, r, a, m) {
+		i['GoogleAnalyticsObject'] = r;
+		i[r] = i[r] || function() {
+			(i[r].q = i[r].q || []).push(arguments)
+		}, i[r].l = 1 * new Date();
+		a = s.createElement(o), m = s.getElementsByTagName(o)[0];
+		a.async = 1;
+		a.src = g;
+		m.parentNode.insertBefore(a, m)
+	})(window, document, 'script', '//www.google-analytics.com/analytics.js',
+			'ga');
 
-  ga('create', 'UA-57001672-1', 'auto');
-  ga('send', 'pageview');
-
+	ga('create', 'UA-57001672-1', 'auto');
+	ga('send', 'pageview');
 </script>
 </html>

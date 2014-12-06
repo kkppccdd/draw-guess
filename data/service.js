@@ -72,10 +72,11 @@ module.exports = (function() {
 		
 	});
 	
-	router.post("/:modelName/:id?",function(req,res){
+	router.post("/:modelName",function(req,res){
 			// create
 			var db = req.db;
 			var modelName=req.params.modelName;
+			console.log(req.body);
 		    db.collection(modelName).insert(req.body, function(err, result){
 		    	if(err){
 		    		res.status(500);
