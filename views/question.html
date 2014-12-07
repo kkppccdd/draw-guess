@@ -4,17 +4,21 @@
 <!-- generate title conditionally -->
 <% if (locals.guess){ if(guess.similarity === 1.0){ %>
 <!-- successful guess -->
-<title>我画你猜 - 我猜对了！！！</title> <% }else{ %>
+<title>我画你猜 - 我猜对了！！！ <%=guess.answer %></title> <% }else{ %>
 <!-- failed guess -->
-<title>我画你猜 - 没猜中～～</title> <% }}else{ %>
-<title>我画你猜 - 快来猜猜</title> <% } %>
+<title>我画你猜 - 没猜中～～ <%=(question.hint==undefined | question.hint==null | question.hint=='')?'快来猜猜':question.hint%></title> <% }}else{ %>
+<title>我画你猜 - <%=(question.hint==undefined | question.hint==null | question.hint=='')?'快来猜猜':question.hint%></title> <% } %>
 
 <meta name="viewport"
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet"
-	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.css" />
+	href="/css/theme/bootstrap/Bootstrap.min.css" />
+	<link rel="stylesheet"
+	href="/css/theme/bootstrap/jquery.mobile.icons.min.css" />
+<link rel="stylesheet"
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.structure.min.css" />
 <style type="text/css">
 li.guess>span {
 	color: grey;
@@ -199,6 +203,7 @@ locals.guess = {
 			// share
 			$("#shareConfirmDialog-leftButton").html("我就是没节操");
 			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"check"});
+			$("#shareConfirmDialog-leftButton").unbind("click");
 			$("#shareConfirmDialog-leftButton").click(function(){
 				$("#shareConfirmDialog").popup("close");
 				setTimeout(showShareTip,300);
@@ -207,6 +212,7 @@ locals.guess = {
 			// not share
 			$("#shareConfirmDialog-leftButton").html("没脸");
 			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"delete"});
+			$("#shareConfirmDialog-leftButton").unbind("click");
 			$("#shareConfirmDialog-leftButton").click(function(){
 				$("#shareConfirmDialog").popup("close");
 			});
@@ -217,6 +223,7 @@ locals.guess = {
 			// share
 			$("#shareConfirmDialog-rightButton").html("我就是没节操");
 			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"check"});
+			$("#shareConfirmDialog-rightButton").unbind("click");
 			$("#shareConfirmDialog-rightButton").click(function(){
 				$("#shareConfirmDialog").popup("close");
 				setTimeout(showShareTip,300);
@@ -225,6 +232,7 @@ locals.guess = {
 			// not share
 			$("#shareConfirmDialog-rightButton").html("没脸");
 			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"delete"});
+			$("#shareConfirmDialog-rightButton").unbind("click");
 			$("#shareConfirmDialog-rightButton").click(function(){
 				$("#shareConfirmDialog").popup("close");
 			});
@@ -267,7 +275,7 @@ locals.guess = {
 </script>
 </head>
 <body>
-	<div data-role="page" id="home" data-theme="b">
+	<div data-role="page" id="home" data-theme="d">
 		<div data-role="header" data-position="fixed">
 			<h3></h3>
 			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
@@ -296,6 +304,7 @@ locals.guess = {
 			</div>
 			<% } } %>
 			<!-- guess result end -->
+			<h3><span>提示：</span><%=question.hint%></h3>
 			<img src="<%=question.imageUrl%>" class="question-image" />
 
 			<ul data-role="listview" id="guessList" data-theme="c">
@@ -309,17 +318,17 @@ locals.guess = {
 				<div style="padding: 10px 20px;">
 
 					<label for="answer">答案：</label> <input name="answer" value=""
-						type="text" placeholder="答案" /> <input id="" name="userId"
+						type="text" placeholder="答案 必填" required/> <input id="" name="userId"
 						value="" type="hidden" /> <input name="questionId"
 						value="<%=question._id %>" type="hidden" />
 					<button type="submit">提交</button>
 				</div>
 			</form>
 		</div>
-		<div data-role="popup" id="shareGuide" class="ui-content" data-theme="a" style="max-width:90%;" data-arrow="t" data-transition="slideup">
+		<div data-role="popup" id="shareGuide" class="ui-content" style="max-width:90%;" data-arrow="t" data-transition="slideup">
           <p>单击浏览器右上⻆按钮分享</p>
 		</div>
-		<div data-role="popup" id="shareConfirmDialog" class="ui-content" data-theme="a" style="max-width:90%;" data-transition="slideup">
+		<div data-role="popup" id="shareConfirmDialog" class="ui-content" style="max-width:90%;" data-transition="slideup">
 		<div role="main" class="ui-content">
           <h3 id="shareConfirmDialog-assessment"></h3>
           	<a href="#shareConfirmDialog-leftButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-leftButton" data-icon="check">left</a>

@@ -8,8 +8,12 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <link rel="stylesheet"
-	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.css" />
-<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"></script>
+	href="/css/theme/bootstrap/Bootstrap.min.css" />
+	<link rel="stylesheet"
+	href="/css/theme/bootstrap/jquery.mobile.icons.min.css" />
+<link rel="stylesheet"
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.structure.min.css" />
+<script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
 <script
 	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
 <script src="/lib/jquery.cookie.js"></script>
@@ -264,6 +268,10 @@ body {
 				console.debug("get empty answer.");
 				return false;
 			}
+			if (hint === "") {
+				console.debug("get empty hint.");
+				return false;
+			}
 
 			var canvas = document.getElementById("canvas");
 
@@ -435,17 +443,17 @@ body {
 </script>
 </head>
 <body>
-	<div data-role="page" id="page1" data-theme="b">
-		<div data-theme="b" data-role="header">
+	<div data-role="page" id="page1" data-theme="d">
+		<div data-role="header">
 			<h3>我画你猜</h3>
-			<a id="draw" data-theme="b" class="ui-btn-left" data-icon="plus">画</a>
-			<a id="complete" data-theme="b" class="ui-btn-right"
+			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
+			<a id="complete" class="ui-btn-right"
 				data-icon="check">完成</a>
 		</div>
 		<div id="content">
 			<p style="text-align: center">Loading Canvas...</p>
 		</div>
-		<div data-theme="b" data-role="footer" data-position="fixed">
+		<div data-role="footer" data-position="fixed">
 			<div class="tool-case">
 				<div class="tool-box">
 					<div class="tool small-pen">
@@ -469,7 +477,7 @@ body {
 							<div class="color-choice"
 								style="background-color: black; width: 36px; height: 36px;"></div>
 						</a>
-						<div data-role="popup" id="colorPalette" data-theme="b"
+						<div data-role="popup" id="colorPalette" 
 							class="ui-grid-b">
 							<div class="ui-block-a">
 								<div class="color-card red" data-rel="back"></div>
@@ -513,11 +521,11 @@ body {
 			<form name="questionSubmitForm">
 				<div style="padding: 10px 20px;">
 					<label for="hint">提示：</label>
-					<textarea name="hint" id="hint" placeholder="给点提示。。。"
+					<textarea name="hint" id="hint" placeholder="给点提示。。。 必填"
 						class=”required”></textarea>
 
 					<label for="answer">正确答案：</label> <input type="text" name="answer"
-						id="answer" value="" placeholder="正确答案" class=”required” />
+						id="answer" value="" placeholder="正确答案 必填" class=”required” />
 
 					<button type="submit">提交</button>
 				</div>
