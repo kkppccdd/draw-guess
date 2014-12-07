@@ -6,7 +6,7 @@
 <!-- successful guess -->
 <title>我画你猜 - 我猜对了！！！ <%=guess.answer %></title> <% }else{ %>
 <!-- failed guess -->
-<title>我画你猜 - 没猜中～～ <%=(question.hint==undefined | question.hint==null | question.hint=='')?'快来猜猜':question.hint%></title> <% }}else{ %>
+<title>我画你猜 - 没猜中～～ <%=(question.hint==undefined || question.hint==null || question.hint=='')?'快来猜猜':question.hint%></title> <% }}else{ %>
 <title>我画你猜 - <%=(question.hint==undefined | question.hint==null | question.hint=='')?'快来猜猜':question.hint%></title> <% } %>
 
 <meta name="viewport"
