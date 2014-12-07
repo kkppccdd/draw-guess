@@ -6,8 +6,8 @@
 <!-- successful guess -->
 <title>我画你猜 - 我猜对了！！！ <%=guess.answer %></title> <% }else{ %>
 <!-- failed guess -->
-<title>我画你猜 - 没猜中～～ <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:'快来猜猜'%></title> <% }}else{ %>
-<title>我画你猜 - <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:'快来猜猜'%></title> <% } %>
+<title>我画你猜 - 没猜中～～ <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% }}else{ %>
+<title>我画你猜 - <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% } %>
 
 <meta name="viewport"
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
@@ -304,7 +304,7 @@ locals.guess = {
 			</div>
 			<% } } %>
 			<!-- guess result end -->
-			<h3><span>提示：</span><%=question.hint%></h3>
+			<h3><span>提示：</span><%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></h3>
 			<img src="<%=question.imageUrl%>" class="question-image" />
 
 			<ul data-role="listview" id="guessList" data-theme="c">
