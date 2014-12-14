@@ -302,6 +302,23 @@ body {
 		$(this).on("touchend", function(e){
 			brush.strokeEnd();
 		});
+		
+		$(this).on("mousedown", function(e){
+			brush.strokeStart(e.pageX,e.pageY-44,color);
+		});
+		$(this).on("mousemove", function(e){
+			brush.stroke(e.pageX,e.pageY-44);
+		});
+		$(window).on("mouseup", function(e){
+			brush.strokeEnd();
+		});
+		
+		$(this).on("MSPointerDown", function(e){
+			brush.strokeStart(e.pageX,e.pageY-44,color);
+		});
+		$(this).on("MSPointerMove", function(e){
+			brush.stroke(e.pageX,e.pageY-44);
+		});
 		//$("#canvas").drawTouch();
 		//$("#canvas").drawPointer();
 		//$("#canvas").drawMouse();
