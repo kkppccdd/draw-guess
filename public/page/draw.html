@@ -17,6 +17,7 @@
 <script
 	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
 <script src="/lib/jquery.cookie.js"></script>
+<script src="/js/brush.js"></script>
 <script src="/lib/canvas-to-blob.min.js"></script>
 <script src="/lib/s3upload.js"></script>
 <style type="text/css">
@@ -45,7 +46,6 @@ body {
 }
 
 .tool-case {
-	width: 260px;
 	margin: auto;
 	text-align: center;
 }
@@ -66,42 +66,6 @@ body {
 	width: 64px;
 }
 
-.red {
-	background-color: #FF0000;
-}
-
-.blue {
-	background-color: #0000FF;
-}
-
-.green {
-	background-color: #00FF00;
-}
-
-.yellow {
-	background-color: #FFFF00;
-}
-
-.aqua {
-	background-color: #00FFFF;
-}
-
-.fuchsia {
-	background-color: #FF00FF;
-}
-
-.silver {
-	background-color: #C0C0C0;
-}
-
-.white {
-	background-color: #fff;
-}
-
-.black {
-	background-color: #000000;
-	border: 2px dashed #fff;
-}
 
 .modalWindow {
 	width: 100%;
@@ -198,6 +162,9 @@ body {
 	}
 
 	var ctx, color = "#000";
+	var brush;
+	var brushes=[];
+	var COLOR=[0,0,0];
 
 	$(document).ready(function() {
 
@@ -216,21 +183,28 @@ body {
 
 		});
 
-		$(".small-pen").click(function() {
-			$.fn.draw = $.fn.smallPenDraw;
+		$(".pen").click(function() {
+			/*$.fn.draw = $.fn.smallPenDraw;
 			console.info("set tool small pen");
 			ctx.beginPath();
+			*/
+			
+			brush=brushes['pen'];
 		});
 
-		$(".medium-pen").click(function() {
-			$.fn.draw = $.fn.mediumPenDraw;
-			console.info("set tool medium pen");
-			ctx.beginPath();
+		$(".feltPen").click(function() {
+			brush=brushes['feltPen'];
+		});
+		
+		$(".crayon").click(function() {
+			brush=brushes['crayon'];
+		});
+		
+		$(".hardBrush").click(function() {
+			brush=brushes['hardBrush'];
 		});
 		$(".eraser").click(function() {
-			$.fn.draw = $.fn.eraserDraw;
-			console.info("set tool eraser");
-			ctx.beginPath();
+			brush=brushes['eraser'];
 		});
 
 		/*******
@@ -239,6 +213,8 @@ body {
 		$(".color-card").click(function() {
 			color = $(this).css("background-color");
 			console.info("choose color:" + color);
+			$(".color-card").css('border','none');
+			$(this).css('border','1px dashed #fff');
 			$(".color-choice").css("background-color", color);
 
 			$("#colorPalette").popup("close");
@@ -298,18 +274,37 @@ body {
 
 		// setup canvas
 		ctx = document.getElementById("canvas").getContext("2d");
-
+		ctx.translate(0.5, 0.5);
 		// set init value
+		
+		// constructor brushes
+		brushes['eraser']=new Eraser(ctx);
+		brushes['pen']=new Pen(ctx);
+		brushes['feltPen']=new FeltPen(ctx);
+		
+		brushes['crayon']=new Crayon(ctx);
+		brushes['hardBrush']=new HardBrush(ctx);
 
 		// choose smal pen by default
-		$(".small-pen").trigger("click");
+		$(".pen").trigger("click");
 		// choose color black by default
 		$(".black").trigger("click");
+		
 
 		// setup to trigger drawing on mouse or touch
-		$("#canvas").drawTouch();
-		$("#canvas").drawPointer();
-		$("#canvas").drawMouse();
+		$(this).on("touchstart", function(e){
+			brush.strokeStart(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44,color);
+			});
+		$(this).on("touchmove", function(e){
+			brush.stroke(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44);
+		});
+		
+		$(this).on("touchend", function(e){
+			brush.strokeEnd();
+		});
+		//$("#canvas").drawTouch();
+		//$("#canvas").drawPointer();
+		//$("#canvas").drawMouse();
 	}
 
 	// prototype to	start drawing on touch using canvas moveTo and lineTo
@@ -332,50 +327,7 @@ body {
 		$(this).on("touchmove", move);
 	};
 
-	// prototype to	start drawing on pointer(microsoft ie) using canvas moveTo and lineTo
-	$.fn.drawPointer = function() {
-		var start = function(e) {
-			e = e.originalEvent;
-			ctx.beginPath();
-			x = e.pageX;
-			y = e.pageY - 44;
-			ctx.moveTo(x, y);
-		};
-		var move = function(e) {
-			e.preventDefault();
-			e = e.originalEvent;
-			x = e.pageX;
-			y = e.pageY - 44;
-			$("#canvas").draw(x, y);
-		};
-		$(this).on("MSPointerDown", start);
-		$(this).on("MSPointerMove", move);
-	};
 
-	// prototype to	start drawing on mouse using canvas moveTo and lineTo
-	$.fn.drawMouse = function() {
-		var clicked = 0;
-		var start = function(e) {
-			clicked = 1;
-			ctx.beginPath();
-			x = e.pageX;
-			y = e.pageY - 44;
-			ctx.moveTo(x, y);
-		};
-		var move = function(e) {
-			if (clicked) {
-				x = e.pageX;
-				y = e.pageY - 44;
-				$("#canvas").draw(x, y);
-			}
-		};
-		var stop = function(e) {
-			clicked = 0;
-		};
-		$(this).on("mousedown", start);
-		$(this).on("mousemove", move);
-		$(window).on("mouseup", stop);
-	};
 
 	/*********
 	 * draw functions
@@ -456,13 +408,23 @@ body {
 		<div data-role="footer" data-position="fixed">
 			<div class="tool-case">
 				<div class="tool-box">
-					<div class="tool small-pen">
+					<div class="tool pen">
 						<image src="/image/pen-small.png" height="36px" />
 					</div>
 				</div>
 				<div class="tool-box">
-					<div class="tool medium-pen">
+					<div class="tool feltPen">
 						<image src="/image/medium-pen.png" height="36px" />
+					</div>
+				</div>
+				<div class="tool-box">
+					<div class="tool crayon">
+						<image src="/image/crayon.png" height="36px" />
+					</div>
+				</div>
+				<div class="tool-box">
+					<div class="tool hardBrush">
+						<image src="/image/hard-brush.png" height="36px" />
 					</div>
 				</div>
 				<div class="tool-box">
@@ -480,28 +442,63 @@ body {
 						<div data-role="popup" id="colorPalette" 
 							class="ui-grid-b">
 							<div class="ui-block-a">
-								<div class="color-card red" data-rel="back"></div>
+								<div class="color-card maroon" style="background-color:#800000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card blue"></div>
+								<div class="color-card purple" style="background-color:#800080;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card green"></div>
+								<div class="color-card navy" style="background-color:#000080;"></div>
 							</div>
+							
 							<div class="ui-block-a">
-								<div class="color-card yellow"></div>
+								<div class="color-card red" style="background-color:#FF0000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card aqua"></div>
+								<div class="color-card fuchsia" style="background-color:#FF00FF;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card fuchsia"></div>
+								<div class="color-card black" style="background-color:#000000;"></div>
 							</div>
+							
 							<div class="ui-block-a">
-								<div class="color-card silver"></div>
+								<div class="color-card orange" style="background-color:#FFA500;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card black"></div>
+								<div class="color-card lime" style="background-color:#00FF00;"></div>
+							</div>
+							<div class="ui-block-c">
+								<div class="color-card gray" style="background-color:#808080;"></div>
+							</div>
+							
+							<div class="ui-block-a">
+								<div class="color-card yellow" style="background-color:#FFFF00;"></div>
+							</div>
+							<div class="ui-block-b">
+								<div class="color-card teal" style="background-color:#008080;"></div>
+							</div>
+							<div class="ui-block-c">
+								<div class="color-card silver" style="background-color:#C0C0C0;"></div>
+							</div>
+							
+							<div class="ui-block-a">
+								<div class="color-card olive" style="background-color:#808000;"></div>
+							</div>
+							<div class="ui-block-b">
+								<div class="color-card aqua" style="background-color:#00FFFF;"></div>
+							</div>
+							<div class="ui-block-c">
+								<div class="color-card white" style="background-color:#FFFFFF;"></div>
+							</div>
+							
+							<div class="ui-block-a">
+								<div class="color-card green" style="background-color:#008000;"></div>
+							</div>
+							<div class="ui-block-b">
+								<div class="color-card blue" style="background-color:#0000FF;"></div>
+							</div>
+							<div class="ui-block-c">
+								<div class="color-card slateGray" style="background-color:#708090;"></div>
 							</div>
 						</div>
 					</div>
