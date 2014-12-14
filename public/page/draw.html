@@ -271,10 +271,12 @@ body {
 		var canvas = '<canvas id="canvas" width="' + $(window).width()
 				+ '" height="' + ($(window).height() - 90) + '"></canvas>';
 		$("#content").html(canvas);
+		
+		//$('#content').draggable('disable');
 
 		// setup canvas
 		ctx = document.getElementById("canvas").getContext("2d");
-		ctx.translate(0.5, 0.5);
+		//ctx.translate(0.5, 0.5);
 		// set init value
 		
 		// constructor brushes
@@ -292,17 +294,20 @@ body {
 		
 
 		// setup to trigger drawing on mouse or touch
-		$(this).on("touchstart", function(e){
+		$('#canvas').on("touchstart", function(e){
+			e.preventDefault();
 			brush.strokeStart(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44,color);
 			});
-		$(this).on("touchmove", function(e){
+		$('#canvas').on("touchmove", function(e){
+			e.preventDefault();
 			brush.stroke(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44);
 		});
 		
-		$(this).on("touchend", function(e){
+		$('#canvas').on("touchend", function(e){
+			e.preventDefault();
 			brush.strokeEnd();
 		});
-		
+		/*
 		$(this).on("mousedown", function(e){
 			brush.strokeStart(e.pageX,e.pageY-44,color);
 		});
@@ -318,7 +323,7 @@ body {
 		});
 		$(this).on("MSPointerMove", function(e){
 			brush.stroke(e.pageX,e.pageY-44);
-		});
+		});*/
 		//$("#canvas").drawTouch();
 		//$("#canvas").drawPointer();
 		//$("#canvas").drawMouse();
@@ -413,16 +418,16 @@ body {
 </head>
 <body>
 	<div data-role="page" id="page1" data-theme="d">
-		<div data-role="header">
+		<div data-role="header" data-position="fixed" data-tap-toggle="false">
 			<h3>我画你猜</h3>
 			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
 			<a id="complete" class="ui-btn-right"
 				data-icon="check">完成</a>
 		</div>
-		<div id="content">
+		<div id="content" data-tap-toggle="false">
 			<p style="text-align: center">Loading Canvas...</p>
 		</div>
-		<div data-role="footer" data-position="fixed">
+		<div data-role="footer" data-position="fixed" data-tap-toggle="false">
 			<div class="tool-case">
 				<div class="tool-box">
 					<div class="tool pen">
