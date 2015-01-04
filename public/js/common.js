@@ -4,6 +4,9 @@
 var me ={
 	firecloud:{
 		common:{
+			// members 
+			me:null,
+			
 			generateUUID:function(){
 			    var d = new Date().getTime();
 			    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -15,28 +18,32 @@ var me ={
 			    
 			    return uuid;
 			},
-			getUserId:function(){
-				// check cookie
-				if($.cookie("userId")!=undefined && $.cookie("userId")!=null){
-					return $.cookie("userId");
+			getUserId:function(callback){
+				var err=null;
+				// check me 
+				if(this.me != null){
+					callback(err,this.me._id);
+					return;
 				}
-				// check local storage
-				// Check browser support
-				if (typeof(Storage) != "undefined") {
-				    // retrieve
-				    var temporaryUserId= localStorage.getItem("temporaryUserId");
-				    if(temporaryUserId!=undefined && temporaryUserId!=null){
-				    	return temporaryUserId;
-				    }else{
-				    	// generate temporary userId
-				    	temporaryUserId=me.firecloud.common.generateUUID();
-				    	localStorage.setItem("temporaryUserId",temporaryUserId);
-				    	
-				    	return temporaryUserId;
-				    }
-				}else{
-					throw "unsupport local storage.";
-				}
+				
+				
+				
+				// get me from server
+				$.ajax({
+					url:'/authentication/me',
+					type:'GET',
+					dataType:'json',
+					success:function(response){
+						me.firecloud.common.me= response;
+						
+						callback(null,me.firecloud.common.me._id);
+					},
+					statusCode: {
+					    401: function() {
+					      callback(401);
+					    }
+					  }
+				});
 			}
 		}
 	}	

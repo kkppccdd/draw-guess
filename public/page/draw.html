@@ -6,11 +6,9 @@
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" />
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-
 <link rel="stylesheet"
-	href="/css/theme/bootstrap/Bootstrap.min.css" />
-	<link rel="stylesheet"
-	href="/css/theme/bootstrap/jquery.mobile.icons.min.css" />
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.icons.min.css" />
+	<link rel="stylesheet" href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.theme.min.css"/>
 <link rel="stylesheet"
 	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.structure.min.css" />
 <script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
@@ -18,8 +16,11 @@
 	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
 <script src="/lib/jquery.cookie.js"></script>
 <script src="/js/brush.js"></script>
+<script src="/js/canvas.js"></script>
+<script src="/js/b64.js"></script>
 <script src="/lib/canvas-to-blob.min.js"></script>
 <script src="/lib/s3upload.js"></script>
+<script src="/lib/lzma_worker-min.js"></script>
 <style type="text/css">
 body {
 	margin: 0px;
@@ -66,7 +67,6 @@ body {
 	width: 64px;
 }
 
-
 .modalWindow {
 	width: 100%;
 	height: 100%;
@@ -87,6 +87,27 @@ body {
 
 	}
 
+	var postPaint = function(paint, callback) {
+		
+		var compressedSteps = LZMA.compress(JSON.stringify(paint.steps),1,function(result){
+			console.log(result.length);
+			paint.stepsLZMA=Base64Binary.base64ArrayBuffer(result);
+			delete paint['steps'];
+			
+			$.ajax({
+				url : '/data/paint',
+				type : 'POST',
+				data : JSON.stringify(paint),
+				contentType : 'application/json',
+				dataType : 'json',
+				success : function(response) {
+					callback(response);
+				}
+			});
+		});
+		
+	};
+
 	var postQuestion = function(question) {
 		$.ajax({
 			url : "/data/question",
@@ -96,13 +117,8 @@ body {
 			dataType : 'json',
 			success : function(msg) {
 				console.debug(msg);
-
 				$.mobile.loading("hide");
-				hideModal();
-
-				$("#uploadSuccessPop").popup("open");
 				window.setTimeout(function() {
-					$("#uploadSuccessPop").popup("close");
 
 					window.location = "/page/question/" + msg._id + ".html";
 				}, 1200);
@@ -110,69 +126,55 @@ body {
 		});
 	};
 
-	var submitQuestion = function(canvas, hint, answer) {
-		if (canvas.toBlob) {
-			canvas.toBlob(function(imageBlob) {
-				console.debug(imageBlob);
+	var submitQuestion = function(canvas, answer) {
 
-				var s3Uploader = new S3Upload({
-					s3_object_name : me.firecloud.common.generateUUID()
-							+ ".png",
-					onProgress : function(percent, message) {
-						console.debug('Upload progress: ' + percent + '% '
-								+ message);
-					},
-					onFinishS3Put : function(public_url) {
+		var paint = canvas.paint;
+		me.firecloud.common.getUserId(function(err,userId){
+			if(err!=null){
+				$('#loginGuide').popup('open');
+			}else{
+				$.mobile.loading("show");
+				paint.creatorId=userId;
+				postPaint(paint, function(response) {
+					var question = {
+						userId : paint.creatorId,
+						paintId : response._id,
+						answer : answer,
+						correct : 0,
+						wrong : 0
+					};
 
-						console.debug('Upload completed. Uploaded to: '
-								+ public_url);
-						public_url = public_url.replace("https://", "http://");
-						// post question
-
-						var question = {
-							userId : me.firecloud.common.getUserId(),
-							imageUrl : public_url,
-							hint:hint,
-							answer : answer,
-							correct : 0,
-							wrong : 0
-						};
-						postQuestion(question);
-
-					},
-					onError : function(status) {
-						console.debug('Upload error: ' + status);
-						$.mobile.loading("hide");
-
-						$("#uploadFailedPop").popup("open");
-						$("#uploadFailedPop").delay(1500).popup("close");
-					}
+					postQuestion(question);
 				});
-				$.mobile.loading('show', {
-					text : "上传图片...",
-					textVisible : true,
-					theme : "b",
-					html : ""
-				});
-				showModal();
-				var results = s3Uploader.handleFileBlob(imageBlob);
-				console.debug(results);
-			}, 'image/png');
-		}
+			}
+		});
+
+		
 	}
 
 	var ctx, color = "#000";
 	var brush;
-	var brushes=[];
-	var COLOR=[0,0,0];
+	var brushes = [];
+	var COLOR = [ 0, 0, 0 ];
 
 	$(document).ready(function() {
+		// check authentication
+		setTimeout(function() {
+			me.firecloud.common.getUserId(function(err, userId) {
+				if (err != null) {
+					// lead user login
+					$('#loginGuide').popup('open');
+				} else {
+					// do nothing
+					console.log('authenticated, userId:' + userId);
+				}
+			});
+		}, 1200);
 
 		// setup a new canvas for drawing wait for device init
 		setTimeout(function() {
 			newCanvas();
 		}, 1000);
-
 
 		// reset palette selection (css) and select the clicked color for canvas strokeStyle
 		$(".tool").click(function() {
@@ -187,24 +189,24 @@ body {
 			/*$.fn.draw = $.fn.smallPenDraw;
 			console.info("set tool small pen");
 			ctx.beginPath();
-			*/
-			
-			brush=brushes['pen'];
+			 */
+
+			brush = brushes['pen'];
 		});
 
 		$(".feltPen").click(function() {
-			brush=brushes['feltPen'];
+			brush = brushes['feltPen'];
 		});
-		
+
 		$(".crayon").click(function() {
-			brush=brushes['crayon'];
+			brush = brushes['crayon'];
 		});
-		
+
 		$(".hardBrush").click(function() {
-			brush=brushes['hardBrush'];
+			brush = brushes['hardBrush'];
 		});
 		$(".eraser").click(function() {
-			brush=brushes['eraser'];
+			brush = brushes['eraser'];
 		});
 
 		/*******
@@ -213,8 +215,8 @@ body {
 		$(".color-card").click(function() {
 			color = $(this).css("background-color");
 			console.info("choose color:" + color);
-			$(".color-card").css('border','none');
-			$(this).css('border','1px dashed #fff');
+			$(".color-card").css('border', 'none');
+			$(this).css('border', '1px dashed #fff');
 			$(".color-choice").css("background-color", color);
 
 			$("#colorPalette").popup("close");
@@ -225,42 +227,42 @@ body {
 			newCanvas();
 		});
 
-		
 		// link the complete button with completeDraw() function
 		$("#complete").click(function() {
 			// show dialog ask answer
 			$("#questionSubmitForm").popup("open");
-			
+
 		});
-		
+
 		$("#questionSubmitForm").submit(function(e) {
-			try{
-			var answer = document.questionSubmitForm.answer.value;
-			var hint = document.questionSubmitForm.hint.value;
+			try {
+				var answer = document.questionSubmitForm.answer.value;
 
-			console.debug("get answer:" + answer);
-			console.debug("get hint:" + hint);
-			if (answer === "") {
-				console.debug("get empty answer.");
-				return false;
-			}
-			if (hint === "") {
-				console.debug("get empty hint.");
-				return false;
-			}
+				console.debug("get answer:" + answer);
+				if (answer === "") {
+					console.debug("get empty answer.");
+					return false;
+				}
 
-			var canvas = document.getElementById("canvas");
+				var canvas = ctx;
 
-			submitQuestion(canvas, hint, answer);
-			$("#questionSubmitForm").popup("close");
-			}catch(ex){
+				submitQuestion(canvas, answer);
+				$("#questionSubmitForm").popup("close");
+			} catch (ex) {
 				console.error(ex);
-				
-			}finally{
+
+			} finally {
 				return false;
 			}
 		});
 
+		// bind login guide event handlers
+		$('#loginGuide').on('click', 'li', function() {
+			var loginMethod = $(this).attr('id');
+			if(loginMethod==='weibo'){
+				window.location='/authentication/login?type=weibo';
+			}
+		});
 
 	});
 
@@ -271,39 +273,48 @@ body {
 		var canvas = '<canvas id="canvas" width="' + $(window).width()
 				+ '" height="' + ($(window).height() - 90) + '"></canvas>';
 		$("#content").html(canvas);
-		
+
 		//$('#content').draggable('disable');
 
 		// setup canvas
-		ctx = document.getElementById("canvas").getContext("2d");
+		ctx = new RecordableCanvas(document.getElementById("canvas"));
 		//ctx.translate(0.5, 0.5);
 		// set init value
-		
+
 		// constructor brushes
-		brushes['eraser']=new Eraser(ctx);
-		brushes['pen']=new Pen(ctx);
-		brushes['feltPen']=new FeltPen(ctx);
-		
-		brushes['crayon']=new Crayon(ctx);
-		brushes['hardBrush']=new HardBrush(ctx);
+		brushes['eraser'] = new Eraser(ctx);
+		brushes['pen'] = new Pen(ctx);
+		brushes['feltPen'] = new FeltPen(ctx);
+
+		brushes['crayon'] = new Crayon(ctx);
+		brushes['hardBrush'] = new HardBrush(ctx);
 
 		// choose smal pen by default
 		$(".pen").trigger("click");
 		// choose color black by default
 		$(".black").trigger("click");
-		
 
 		// setup to trigger drawing on mouse or touch
-		$('#canvas').on("touchstart", function(e){
-			e.preventDefault();
-			brush.strokeStart(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44,color);
-			});
-		$('#canvas').on("touchmove", function(e){
-			e.preventDefault();
-			brush.stroke(e.originalEvent.changedTouches[0].pageX,e.originalEvent.changedTouches[0].pageY-44);
-		});
-		
-		$('#canvas').on("touchend", function(e){
+		$('#canvas')
+				.on(
+						"touchstart",
+						function(e) {
+							e.preventDefault();
+							brush
+									.strokeStart(
+											e.originalEvent.changedTouches[0].pageX,
+											e.originalEvent.changedTouches[0].pageY - 44,
+											color);
+						});
+		$('#canvas').on(
+				"touchmove",
+				function(e) {
+					e.preventDefault();
+					brush.stroke(e.originalEvent.changedTouches[0].pageX,
+							e.originalEvent.changedTouches[0].pageY - 44);
+				});
+
+		$('#canvas').on("touchend", function(e) {
 			e.preventDefault();
 			brush.strokeEnd();
 		});
@@ -348,8 +359,6 @@ body {
 		$(this).on("touchstart", start);
 		$(this).on("touchmove", move);
 	};
-
-
 
 	/*********
 	 * draw functions
@@ -417,12 +426,11 @@ body {
 </script>
 </head>
 <body>
-	<div data-role="page" id="page1" data-theme="d">
+	<div data-role="page" id="page1" data-theme="a">
 		<div data-role="header" data-position="fixed" data-tap-toggle="false">
 			<h3>我画你猜</h3>
-			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
-			<a id="complete" class="ui-btn-right"
-				data-icon="check">完成</a>
+			<a id="draw" class="ui-btn-left" data-icon="plus">画</a> <a
+				id="complete" class="ui-btn-right" data-icon="check">完成</a>
 		</div>
 		<div id="content" data-tap-toggle="false">
 			<p style="text-align: center">Loading Canvas...</p>
@@ -461,66 +469,71 @@ body {
 							<div class="color-choice"
 								style="background-color: black; width: 36px; height: 36px;"></div>
 						</a>
-						<div data-role="popup" id="colorPalette" 
-							class="ui-grid-b">
+						<div data-role="popup" id="colorPalette" class="ui-grid-b">
 							<div class="ui-block-a">
-								<div class="color-card maroon" style="background-color:#800000;"></div>
+								<div class="color-card maroon"
+									style="background-color: #800000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card purple" style="background-color:#800080;"></div>
+								<div class="color-card purple"
+									style="background-color: #800080;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card navy" style="background-color:#000080;"></div>
+								<div class="color-card navy" style="background-color: #000080;"></div>
 							</div>
-							
+
 							<div class="ui-block-a">
-								<div class="color-card red" style="background-color:#FF0000;"></div>
+								<div class="color-card red" style="background-color: #FF0000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card fuchsia" style="background-color:#FF00FF;"></div>
+								<div class="color-card fuchsia"
+									style="background-color: #FF00FF;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card black" style="background-color:#000000;"></div>
+								<div class="color-card black" style="background-color: #000000;"></div>
 							</div>
-							
+
 							<div class="ui-block-a">
-								<div class="color-card orange" style="background-color:#FFA500;"></div>
+								<div class="color-card orange"
+									style="background-color: #FFA500;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card lime" style="background-color:#00FF00;"></div>
+								<div class="color-card lime" style="background-color: #00FF00;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card gray" style="background-color:#808080;"></div>
+								<div class="color-card gray" style="background-color: #808080;"></div>
 							</div>
-							
+
 							<div class="ui-block-a">
-								<div class="color-card yellow" style="background-color:#FFFF00;"></div>
+								<div class="color-card yellow"
+									style="background-color: #FFFF00;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card teal" style="background-color:#008080;"></div>
+								<div class="color-card teal" style="background-color: #008080;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card silver" style="background-color:#C0C0C0;"></div>
+								<div class="color-card silver"
+									style="background-color: #C0C0C0;"></div>
 							</div>
-							
+
 							<div class="ui-block-a">
-								<div class="color-card olive" style="background-color:#808000;"></div>
+								<div class="color-card olive" style="background-color: #808000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card aqua" style="background-color:#00FFFF;"></div>
+								<div class="color-card aqua" style="background-color: #00FFFF;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card white" style="background-color:#FFFFFF;"></div>
+								<div class="color-card white" style="background-color: #FFFFFF;"></div>
 							</div>
-							
+
 							<div class="ui-block-a">
-								<div class="color-card green" style="background-color:#008000;"></div>
+								<div class="color-card green" style="background-color: #008000;"></div>
 							</div>
 							<div class="ui-block-b">
-								<div class="color-card blue" style="background-color:#0000FF;"></div>
+								<div class="color-card blue" style="background-color: #0000FF;"></div>
 							</div>
 							<div class="ui-block-c">
-								<div class="color-card pink" style="background-color:#FFC0CB;"></div>
+								<div class="color-card pink" style="background-color: #FFC0CB;"></div>
 							</div>
 						</div>
 					</div>
@@ -539,9 +552,6 @@ body {
 		<div data-role="popup" id="questionSubmitForm" class="ui-corner-all">
 			<form name="questionSubmitForm">
 				<div style="padding: 10px 20px;">
-					<label for="hint">提示：</label>
-					<textarea name="hint" id="hint" placeholder="给点提示。。。 必填"
-						class=”required”></textarea>
 
 					<label for="answer">正确答案：</label> <input type="text" name="answer"
 						id="answer" value="" placeholder="正确答案 必填" class=”required” />
@@ -549,6 +559,15 @@ body {
 					<button type="submit">提交</button>
 				</div>
 			</form>
+		</div>
+		<div data-role="popup" id="loginGuide" data-transition="slideup"
+			data-dismissible="false" class="ui-corner-all">
+			<ul data-role="listview" style="min-width:210px;">
+				<li data-role="list-divider">选择登入方式</li>
+				<li id="weibo"><a href="#"><img
+						src="http://www.sinaimg.cn/blog/developer/wiki/LOGO_48x48.png"
+						alt="新浪微博" class="ui-li-icon">新浪微博</a></li>
+			</ul>
 		</div>
 	</div>
 </body>

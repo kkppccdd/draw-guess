@@ -7,9 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet"
-	href="/css/theme/bootstrap/Bootstrap.min.css" />
-	<link rel="stylesheet"
-	href="/css/theme/bootstrap/jquery.mobile.icons.min.css" />
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.icons.min.css" />
+	<link rel="stylesheet" href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.theme.min.css"/>
 <link rel="stylesheet"
 	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.structure.min.css" />
 <script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
@@ -196,7 +195,7 @@
 										var output = "";
 										for (var i = 0; i < data.length; i++) {
 											var question = data[i];
-											output += '<li class="question"><a href="#allGuessListPage" onclick="sessionStorage.questionId=\''+question._id+'\'">';
+											output += '<li class="question"><a href="#guessEntryPage" onclick="sessionStorage.questionId=\''+question._id+'\'">';
 											output += '<span class="ui-li-count" data-count-theme="b">'
 													+ (question.wrong + question.correct)
 													+ '</span>';
@@ -331,134 +330,66 @@
 </script>
 </head>
 <body>
-	<div id="myQuestionPage" data-role="page" data-theme="d">
+	<div id="myQuestionEntryPage" data-role="page" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
 				data-transition="slide" data-direction="reverse">Back</a>
-			<h1>Page 1</h1>
+			<h1>Setting</h1>
+		</div>
+		<div data-role="content">
+			<ul id="setting-tab-list" data-role="listview">
+				<li><a href="#myQuestionPage">我出的题目</a></li>
+			</ul>
+		</div>
+	</div>
+
+	<div id="myQuestionPage" data-role="page" data-theme="a">
+		<div data-role="header" data-position="fixed">
+			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
+				data-transition="slide" data-direction="reverse">Back</a>
+			<h1>我出的题目</h1>
 		</div>
 		<div data-role="content">
 			<ul id="questionList" data-role="listview">
 			</ul>
 		</div>
-		<div data-role="footer" data-position="fixed">
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#myQuestionPage" data-role="tab" data-icon="grid"
-						class="ui-btn-active">myQuestionPage</a></li>
-					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
-							2</a></li>
-					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
-							3</a></li>
-				</ul>
-			</div>
-		</div>
 	</div>
-
-	<div id="page-2" data-role="page" data-theme="d">
+	
+	<div id="guessEntryPage" data-role="page" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
 				data-transition="slide" data-direction="reverse">Back</a>
-			<h1>Page 2</h1>
+			<h1>竞猜</h1>
 		</div>
 		<div data-role="content">
-			<p>Page 2 content</p>
-		</div>
-		<div data-role="footer" data-position="fixed">
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#myQuestionPage" data-role="tab" data-icon="grid">Page
-							1</a></li>
-					<li><a href="#page-2" data-role="tab" data-icon="grid"
-						class="ui-btn-active">Page 2</a></li>
-					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
-							3</a></li>
-				</ul>
-			</div>
-		</div>
-	</div>
-
-	<div id="page-3" data-role="page" data-theme="d">
-		<div data-role="header" data-position="fixed">
-			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
-				data-transition="slide" data-direction="reverse">Back</a>
-			<h1>Page 3</h1>
-		</div>
-		<div data-role="content">
-			<p>Page 3 content</p>
-		</div>
-		<div data-role="footer" data-position="fixed">
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#page-1" data-role="tab" data-icon="grid">Page
-							1</a></li>
-					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
-							2</a></li>
-					<li><a href="#page-3" data-role="tab" data-icon="grid"
-						class="ui-btn-active">Page 3</a></li>
-				</ul>
-			</div>
+			<ul id="setting-tab-list" data-role="listview">
+				<li><a href="#allGuessListPage">所有竞猜</a></li>
+				<li><a href="#correctGuessListPage">正确竞猜</a></li>
+			</ul>
 		</div>
 	</div>
 
 	<!-- guess list page, show guess list of question sessionStorage.questionId-->
-	<div id="allGuessListPage" data-role="page" data-theme="d">
+	<div id="allGuessListPage" data-role="page" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
 				data-transition="slide" data-direction="reverse">Back</a>
-			<h1>Page 3</h1>
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#allGuessListPage"
-						class="ui-btn-active ui-state-persist">All</a></li>
-					<li><a href="#correctGuessListPage">Correct</a></li>
-				</ul>
-			</div>
+			<h1>所有竞猜</h1>
 		</div>
 		<div data-role="content">
 			<ul id="allGuessListPage-guessList" data-role="listview">
 			</ul>
 		</div>
-		<div data-role="footer" data-position="fixed">
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#page-1" data-role="tab" data-icon="grid"
-						class="ui-btn-active">Page 1</a></li>
-					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
-							2</a></li>
-					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
-							3</a></li>
-				</ul>
-			</div>
-		</div>
 	</div>
-	<div id="correctGuessListPage" data-role="page" data-theme="d">
+	<div id="correctGuessListPage" data-role="page" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<a href="#" data-icon="arrow-l" data-iconpos="left" data-rel="back"
 				data-transition="slide" data-direction="reverse">Back</a>
-			<h1>Page 3</h1>
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#allGuessListPage">All</a></li>
-					<li><a href="#correctGuessListPage" class="ui-btn-active ui-state-persist">Correct</a></li>
-				</ul>
-			</div>
+			<h1>正确竞猜</h1>
 		</div>
 		<div data-role="content">
 			<ul id="correctGuessListPage-guessList" data-role="listview">
 			</ul>
-		</div>
-		<div data-role="footer" data-position="fixed">
-			<div data-role="navbar">
-				<ul>
-					<li><a href="#page-1" data-role="tab" data-icon="grid"
-						class="ui-btn-active">Page 1</a></li>
-					<li><a href="#page-2" data-role="tab" data-icon="grid">Page
-							2</a></li>
-					<li><a href="#page-3" data-role="tab" data-icon="grid">Page
-							3</a></li>
-				</ul>
-			</div>
 		</div>
 	</div>
 </body>

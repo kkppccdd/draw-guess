@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html xmlns:wb="http://open.weibo.com/wb">
 <head>
 <!-- generate title conditionally -->
 <% if (locals.guess){ if(guess.similarity === 1.0){ %>
@@ -14,9 +14,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet"
-	href="/css/theme/bootstrap/Bootstrap.min.css" />
-	<link rel="stylesheet"
-	href="/css/theme/bootstrap/jquery.mobile.icons.min.css" />
+	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.icons.min.css" />
+	<link rel="stylesheet" href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.theme.min.css"/>
 <link rel="stylesheet"
 	href="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.structure.min.css" />
 <style type="text/css">
@@ -40,12 +39,37 @@ li.guess>p {
 	width: 100%;
 	display: block;
 }
+
+    
+.ui-icon-restart:after {
+	background-image: url("/image/control-restart.png");
+	background-size: 18px 18px;
+}
+
+.ui-icon-play:after {
+	background-image: url("/image/control-play.png");
+	background-size: 18px 18px;
+}
+
+.ui-icon-pause:after {
+	background-image: url("/image/control-pause.png");
+	background-size: 18px 18px;
+}
+
+
+#playCanvas{
+	margin: 0 auto 0 auto;
+	display: block;
+}
 </style>
 <script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
 <script
 	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
+	
+<script src="http://tjs.sjs.sinajs.cn/open/api/js/wb.js?appkey=3083493291&debug=true" type="text/javascript" charset="utf-8"></script>
 <script src="/lib/jquery.cookie.js"></script>
-
+<script src="/lib/canvas-to-blob.min.js"></script>
+<script src="/lib/lzma_worker.js"></script>
 <script type="text/javascript">
 	dojoConfig = {
 		async : true,
@@ -56,10 +80,14 @@ li.guess>p {
 	src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
 
 <script src="/js/common.js"></script>
+<script src="/js/canvas.js"></script>
+<script src="/js/weibo.js"></script>
+<script src="/js/b64.js"></script>
 <script type="text/javascript">
 var locals = {
 		question: {
-			id:"<%=question._id %>"
+			id:"<%=question._id %>",
+			paintId:"<%=question.paintId %>"
 		}
 };
 
@@ -73,7 +101,8 @@ locals.guess = {
 </script>
 <script type="text/javascript">
 	var question = {
-		id : "<%=question._id %>"
+		id : "<%=question._id %>",
+		paintId:"<%=question.paintId %>"
 	}
 	var guessStore;
 	require([ "dojo/store/JsonRest" ], function(JsonRest) {
@@ -94,6 +123,8 @@ locals.guess = {
 		};
 		addMore($.mobile.activePage);
 	});
+	
+	var weibo = new Weibo();
 	/* create scrollstop handler function */
 	function checkScroll() {
 		/* You always need this in order to target
@@ -124,6 +155,9 @@ locals.guess = {
 		if (activePage[0].id == "home" && scrolled >= scrollEnd) {
 			/* run loadMore function */
 			addMore(activePage);
+		}else if(activePage[0].id == "shareOnWeibo" && scrolled >= scrollEnd) {
+			/* run loadMore function */
+			addMoreFriend(activePage);
 		}
 	}
 	function addMore(page) {
@@ -179,6 +213,59 @@ locals.guess = {
 													checkScroll);
 										}
 									});
+				}, 500);
+	}
+	
+	function addMoreFriend(page){
+		/* remove scrollstop event listener */
+		$(document).off("scrollstop");
+
+		/* show loader (optional) */
+		$.mobile.loading("show", {
+			text : "loading more..",
+			textVisible : true
+		});
+
+		/* delay loading elements 500ms
+		   and then re-attach scrollstop */
+		setTimeout(
+				function() {
+					//
+					console.debug("load more");
+					weibo.fetchFriend(20,function(items){
+						// append to friend list
+						
+						var output='';
+						for(var i=0;i<items.length;i++){
+							var item = items[i];
+							output+='<li class="user" data-screen-name="'+item.screen_name+'">';
+							//avatar
+							output+='<img src="'+item.profile_image_url+'" />';
+							// screen name
+							output+='<h1>'+item.screen_name+'</h1>';
+							output+='</li>';
+						}
+						
+						$('#friendList',page).append(output).listview('refresh');
+						
+						// friend check event handler
+						$('#friendList li').on('click',function(event){
+							var friendName =$(this).attr('data-screen-name');
+							console.log(friendName);
+							
+							var text = $('#shareOnWeibo-status').val();
+							$('#shareOnWeibo-status').val(text+'@'+friendName);
+						});
+						
+						$.mobile.loading("hide");
+
+						if (items.length > 0) {
+							/* re-attach scrollstop */
+							$(document).on("scrollstop",
+									checkScroll);
+						}
+						
+					});
 				}, 500);
 	}
 	
@@ -240,49 +327,160 @@ locals.guess = {
 		
     	$("#shareConfirmDialog").popup("open");
 	};
+	var playCanvas;
 	// link the new button with newCanvas() function
 	$(document).ready(function() {
+		// load paint
+		
+		$.ajax({
+			url:'/data/paint/'+locals.question.paintId,
+			type:'GET',
+			dataType:'json',
+			success:function(response){
+				var paint = response;
+				var stepsLZMABytes = Base64Binary.decodeArrayBuffer(paint.stepsLZMA);
+					LZMA.decompress(stepsLZMABytes,function(result){
+						paint.steps=JSON.parse(result);
+						var canvas = '<canvas id="playCanvas" width="' + paint.canvas.size.width
+						+ '" height="' + paint.canvas.size.height + '"></canvas>';
+						$("#paint").html(canvas);
+						
+						playCanvas = new PlayCanvas(document.getElementById('playCanvas'),paint);
+						playCanvas.play();
+					},function(progress){
+						console.log('progress:'+progress);
+					});
+				
+				
+				
+			}
+		});
 		$("#draw").click(function() {
 			window.location = "/page/draw.html";
 		});
 
 		$("#guess").click(function() {
 			// show dialog ask answer
-			document.guessForm.reset();
-			$("#guessForm").popup("open");
+			me.firecloud.common.getUserId(function(err,userId){
+				if(err!=null){
+					// 
+					$('#loginGuide').popup('open');
+				}else{
+					document.guessForm.reset();
+					document.guessForm.userId.value=userId;
+					$("#guessForm").popup("open");
+				}
+			});
+			
 		});
 		
 		$("#share").click(function(){
-			// check if is show question 
-			if(locals.guess == undefined){
-				// show share tip
-				showShareTip();
-			}else{
-				if(locals.guess.similarity === 1.0){
-					// show share tip
-					showShareTip();
+			// check authentication
+			me.firecloud.common.getUserId(function(err,userId){
+				if(err!=null){
+					// guide user login
+					$('#loginGuide').popup('open');
 				}else{
-					// show confirm dialog
-					showShareConfirmDialog();
+					$('#shareMenu').popup('open');
 				}
+			});
+			
+		});
+		
+		// bind login guide event handlers
+		$('#loginGuide').on('click', 'li', function() {
+			var loginMethod = $(this).attr('id');
+			if(loginMethod==='weibo'){
+				window.location='/authentication/login?type=weibo';
 			}
 		});
+		
+		// play control button
+		
+		$('#control-restart').click(function(){
+			playCanvas.restart();
+			
+			$('#control-play').closest('.ui-btn').hide();
+			$('#control-pause').closest('.ui-btn').show();
+		});
+		
+		$('#control-play').click(function(){
+			playCanvas.play();
+			
+			$('#control-play').closest('.ui-btn').hide();
+			$('#control-pause').closest('.ui-btn').show();
+		});
+		
+		$('#control-pause').click(function(){
+			playCanvas.pause();
+			
+			$('#control-play').closest('.ui-btn').show();
+			$('#control-pause').closest('.ui-btn').hide();
+		});
+		
+		// init play control button
+		$('#control-play').closest('.ui-btn').hide();
+		
+		// share on weibo event handlers
+		$('#shareOnWeibo').on("pageshow",function(event,ui){
+			setTimeout(function(){
+			$('#shareOnWeibo-status').css({
+			    'height': 'auto'
+			  });
+			
+			$('#shareOnWeibo-status').val('#我画你猜#'+window.location.origin+window.location.pathname+' ');
+			},200);
+			addMoreFriend($.mobile.activePage);
+		});
+		
+		// do share on weibo 
+		$('#shareOnWeibo-complete').on('click',function(event,ui){
+			// get status text
+			var status = $('#shareOnWeibo-status').val();
+			// get image
+			playCanvas.toBlob(function(imageBlob){
+				var formData = new FormData();
+				formData.append('status',status);
+				formData.append('image',imageBlob);
+				$.mobile.loading("show");
+				
+				$.ajax({
+				    type: 'POST',
+				    url: '/socialnetwork/statuses/upload',
+				    data: formData,
+				    processData: false,
+				    contentType: false
+				}).done(function(data) {
+				       console.log(data);
+				       $.mobile.loading("hide");
+				       $('#shareOnWeiboSuccessfulInfo').popup('open');
+				       setTimeout(function(){
+				    	   //$('#shareOnWeiboSuccessfulInfo').popup('close');
+				    	   $.mobile.navigate('#home');
+				       },500);
+				});
+			});
+			
+			
+			
+		});
+		
+		
 
-		document.guessForm.userId.value = me.firecloud.common.getUserId();
 		/* attach if scrollstop for first time */
 		$(document).on("scrollstop", checkScroll);
 	});
 </script>
 </head>
 <body>
-	<div data-role="page" id="home" data-theme="d">
+	<div data-role="page" id="home" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<h3></h3>
 			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
 			<div data-role="controlgroup" data-type="horizontal"
 				class="ui-btn-right">
-				<a id="guess"data-role="button" data-icon="check">猜</a>
-				<a id="share" data-role="button" data-icon="star">分享</a>
+				<a id="guess" data-role="button" data-icon="check">猜</a>
+				<a id="share" data-role="button" data-icon="action">分享</a>
 			</div>
 		</div>
 		<div id="content" data-role="content">
@@ -304,12 +502,19 @@ locals.guess = {
 			</div>
 			<% } } %>
 			<!-- guess result end -->
+			<!-- 
 			<h3><span>提示：</span><%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></h3>
-			<img src="<%=question.imageUrl%>" class="question-image" />
+			-->
+			<div id="paint" style="left:0px;">Loading ...</div>
 
 			<ul data-role="listview" id="guessList" data-theme="c">
 
 			</ul>
+		</div>
+		<div data-role="footer" data-position="fixed">
+				<a id="control-restart" data-role="button"  data-icon="restart" data-inline="false" href="#" data-iconpos="notext">restart</a>
+				<a id="control-play"  data-role="button"  data-icon="play" data-inline="false" href="#" data-iconpos="notext">play</a>
+				<a id="control-pause" data-role="button"  data-icon="pause" data-inline="false" href="#" data-iconpos="notext">pause</a>				
 		</div>
 		<div data-role="popup" id="guessForm" class="ui-corner-all">
 			<form name="guessForm"
@@ -335,8 +540,51 @@ locals.guess = {
           	<a href="#shareConfirmDialog-rightButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-rightButton" data-icon="check">right</a>
           	</div>
 		</div>
+				<div data-role="popup" id="loginGuide" data-transition="slideup"
+			data-dismissible="false" class="ui-corner-all">
+			<ul data-role="listview" style="min-width:210px;">
+				<li data-role="list-divider">选择登入方式</li>
+				<li id="weibo"><a href="#"><img
+						src="http://www.sinaimg.cn/blog/developer/wiki/LOGO_48x48.png"
+						alt="新浪微博" class="ui-li-icon">新浪微博</a></li>
+			</ul>
+		</div>
+		<div data-role='popup' id='shareMenu' data-transition='slideup' data-position-to='origin'>
+			<ul data-role="listview" style="min-width:210px;">
+				<li ><a href="#shareOnWeibo"><img
+						src="http://www.sinaimg.cn/blog/developer/wiki/LOGO_48x48.png"
+						alt="新浪微博" class="ui-li-icon">新浪微博</a></li>
+			</ul>
+		</div>
+		<div data-role="popup" id="loginGuide" data-transition="slideup"
+			data-dismissible="false" class="ui-corner-all">
+			<ul data-role="listview" style="min-width:210px;">
+				<li data-role="list-divider">选择登入方式</li>
+				<li id="weibo"><a href="#"><img
+						src="http://www.sinaimg.cn/blog/developer/wiki/LOGO_48x48.png"
+						alt="新浪微博" class="ui-li-icon">新浪微博</a></li>
+			</ul>
+		</div>
 	</div>
-
+	<div data-role="page" id="shareOnWeibo" data-theme="a">
+		<div data-role='header' data-position="fixed">
+			<a data-role="button" data-icon="back" data-rel='back' class="ui-btn-left" id="shareOnWeibo-back">Back</a>
+			<h1></h1>
+			<a id="shareOnWeibo-complete" data-role="button" data-icon="check" class="ui-btn-right">确定</a>
+			<textarea cols="40" rows="8" name="shareOnWeibo-status" id="shareOnWeibo-status" style='min-height:150px;'>#我画你猜#</textarea>
+			<h3><span>@</span></h3>
+		</div>
+		<div data-role='content'>
+			
+			<div data-role='listview' id='friendList'>
+			
+			</div>
+		</div>
+		<!--  popup -->
+		<div data-role="popup" id="shareOnWeiboSuccessfulInfo">
+			<p>分享成功！</p>
+		</div>
+	</div>
 
 </body>
 <script>

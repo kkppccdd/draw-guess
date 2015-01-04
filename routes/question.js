@@ -30,7 +30,7 @@ module.exports = (function() {
 	questionHandler.post("/:id.html", function(req, res, next) {
 		var id = req.param("questionId", null);
 		var guessAnswer = req.param("answer", null);
-		var userId =req.param("userId",null);
+		var userId =req.session.user._id;
 		// load
 		db.collection("question").findById(
 				id,

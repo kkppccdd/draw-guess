@@ -30,8 +30,14 @@ module.exports = (function() {
 		native_parser : true
 	});
 	
-	router.use(bodyParser.json());
-	router.use(bodyParser.urlencoded());
+	
+	router.use(bodyParser.json({
+		limit: '5mb'
+	}));
+	router.use(bodyParser.urlencoded({
+		  extended: true,
+		  limit: '5mb'
+	}));
 	router.use(cookieParser());
 
 	// set db for each request
