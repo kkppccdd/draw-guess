@@ -6,7 +6,6 @@ var express = require('express');
 //social network integration
 var weibo = require('../../lib/weibo/index.js');
 var inherits = require('util').inherits;
-var formidable=require('formidable');
 var util = require('util');
 
 var WEIBO_APP_KEY=process.env.WEIBO_APP_KEY;
