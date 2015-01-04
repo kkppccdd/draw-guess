@@ -4,7 +4,6 @@
 var assert = require("assert");
 
 var express = require('express');
-var compress = require("compression");
 var ejs = require("ejs");
 var http = require('http');
 var path = require('path');
@@ -41,7 +40,6 @@ var app = express();
 app.use(session({
 	keys : [ 'key1', 'key2' ]
 }));
-app.use(compress());
 app.use(logger('dev'));
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
