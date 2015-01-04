@@ -4,10 +4,10 @@
 <!-- generate title conditionally -->
 <% if (locals.guess){ if(guess.similarity === 1.0){ %>
 <!-- successful guess -->
-<title>我画你猜 - 我猜对了！！！ <%=guess.answer %></title> <% }else{ %>
+<title>画点神马 - 我猜对了！！！ <%=guess.answer %></title> <% }else{ %>
 <!-- failed guess -->
-<title>我画你猜 - 没猜中～～ <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% }}else{ %>
-<title>我画你猜 - <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% } %>
+<title>画点神马 - 没猜中～～ <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% }}else{ %>
+<title>画点神马 - <%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></title> <% } %>
 
 <meta name="viewport"
 	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
@@ -430,7 +430,7 @@ locals.guess = {
 			    'height': 'auto'
 			  });
 			
-			$('#shareOnWeibo-status').val('#我画你猜#'+window.location.origin+window.location.pathname+' ');
+			$('#shareOnWeibo-status').val('#画点神马#'+window.location.origin+window.location.pathname+' ');
 			},200);
 			addMoreFriend($.mobile.activePage);
 		});
@@ -574,7 +574,7 @@ locals.guess = {
 			<a data-role="button" data-icon="back" data-rel='back' class="ui-btn-left" id="shareOnWeibo-back">Back</a>
 			<h1></h1>
 			<a id="shareOnWeibo-complete" data-role="button" data-icon="check" class="ui-btn-right">确定</a>
-			<textarea cols="40" rows="8" name="shareOnWeibo-status" id="shareOnWeibo-status" style='min-height:150px;'>#我画你猜#</textarea>
+			<textarea cols="40" rows="8" name="shareOnWeibo-status" id="shareOnWeibo-status" style='min-height:150px;'>#画点神马#</textarea>
 			<h3><span>@</span></h3>
 		</div>
 		<div data-role='content'>
