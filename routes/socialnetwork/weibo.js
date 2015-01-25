@@ -36,6 +36,21 @@ module.exports = (function() {
 				return false;
 			}
 			
+			// check if token is expired
+			
+			var willExpireIn=session.oauthUser.authenticatedAt+session.oauthUser.expires_in*1000;
+			
+			willExpireIn=willExpireIn-3600000
+			var now = Date.now();
+			console.log(session.oauthUser.id+' '+session.oauthUser.name+' will expired in '+willExpireIn+', now is '+now);
+			
+			if(now>willExpireIn){
+				//token is expired
+				
+				return false;
+			}
+			
+			
 			return true;
 		}
 		

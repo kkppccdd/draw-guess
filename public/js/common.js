@@ -48,3 +48,81 @@ var me ={
 		}
 	}	
 };
+
+function RestStore(modelName){
+	this._baseUrl="/data";
+	this._modelName=modelName;
+	this._cursor={
+			skip:0,
+			limit:10
+	};
+}
+
+RestStore.prototype.constructor=RestStore;
+
+RestStore.prototype.query=function(criteria,callback){
+	var theStore = this;
+	$.ajax({
+		url:theStore._baseUrl+'/'+theStore._modelName,
+		type:'GET',
+		data:{criteria:JSON.stringify(criteria)},
+		dataType:'json',
+		success:function(response){
+			console.log(response);
+			if(callback !=undefined){
+				callback(response);
+			}
+		}
+	});
+};
+
+RestStore.prototype.fetch=function(batchSize,criteria,callback){
+	if(criteria!=undefined){
+		this._cursor.criteria=criteria;
+	}
+	var theStore = this;
+	$.ajax({
+		url:theStore._baseUrl+'/'+theStore._modelName,
+		type:'GET',
+		data:{criteria:JSON.stringify(theStore._cursor.criteria),skip:theStore._cursor.skip||0,limit:batchSize},
+		dataType:'json',
+		success:function(items){
+			console.log(items);
+			theStore._cursor.skip=theStore._cursor.skip+batchSize;
+			if(callback !=undefined){
+				callback(items);
+			}
+		}
+	});
+}
+
+RestStore.prototype.get=function(id,callback){
+	var theStore = this;
+	$.ajax({
+		url:theStore._baseUrl+'/'+theStore._modelName+'/'+id,
+		type:'GET',
+		dataType:'json',
+		success:function(response){
+			console.log(response);
+			if(callback !=undefined){
+				callback(response);
+			}
+		}
+	});
+}
+
+RestStore.prototype.insert=function(object,callback){
+	var theStore = this;
+	$.ajax({
+		url:theStore._baseUrl+'/'+theStore._modelName,
+		type:'POST',
+		data:object,
+		dataType:'json',
+		success:function(response){
+			console.log(response);
+			if(callback !=undefined){
+				callback(response);
+			}
+		}
+	});
+}

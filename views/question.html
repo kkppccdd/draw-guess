@@ -67,411 +67,33 @@ li.guess>p {
 <script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
 <script
 	src="http://libs.useso.com/js/jquery-mobile/1.4.2/jquery.mobile.min.js"></script>
-	
-<script src="http://tjs.sjs.sinajs.cn/open/api/js/wb.js?appkey=3083493291&debug=true" type="text/javascript" charset="utf-8"></script>
 <script src="/lib/jquery.cookie.js"></script>
 <script src="/lib/canvas-to-blob.min.js"></script>
 <script src="/lib/lzma_worker.js"></script>
-<script type="text/javascript">
-	dojoConfig = {
-		async : true,
-		parseOnLoad : false
-	};
-</script>
-<script type="text/javascript"
-	src="http://ajax.useso.com/ajax/libs/dojo/1.10.2/dojo/dojo.js"></script>
 
 <script src="/js/common.js"></script>
 <script src="/js/canvas.js"></script>
 <script src="/js/weibo.js"></script>
 <script src="/js/b64.js"></script>
+<script src="/js/page/question.js"></script>
 <script type="text/javascript">
-var locals = {
-		question: {
-			id:"<%=question._id %>",
-			paintId:"<%=question.paintId %>"
-		}
+questionView.question = {
+			_id:"<%=question._id %>",
+			userId:"<%=question.userId%>",
+			paintId:"<%=question.paintId %>",
+			answer:"<%=question.answer %>",
+			correct:<%=question.correct %>,
+			wrong:<%=question.wrong %>,
+			completed:<%=question.completed %>
+			
 };
-
-<% if(locals.guess){ %>
-locals.guess = {
-	similarity:<%=guess.similarity %>,
-	assessment:"<%=guess.assessment %>"
-};
-<% } %>
 
 </script>
 <script type="text/javascript">
-	var question = {
-		id : "<%=question._id %>",
-		paintId:"<%=question.paintId %>"
-	}
-	var guessStore;
-	require([ "dojo/store/JsonRest" ], function(JsonRest) {
-		guessStore = new JsonRest({
-			target : "/data/guess",
-			sortParam : "sortBy"
-		});
-		guessStore.current = 0;
-		guessStore.fetchBatchSize = 10;
-		guessStore.fetch = function(query, batchSize) {
-			batchSize = batchSize || this.fetchBatchSize;
-			query.skip = this.current;
-			query.limit = batchSize;
-			var result = this.query(query);
-			this.current = this.current + batchSize;
 
-			return result;
-		};
-		addMore($.mobile.activePage);
-	});
-	
-	var weibo = new Weibo();
-	/* create scrollstop handler function */
-	function checkScroll() {
-		/* You always need this in order to target
-		   elements within active page */
-		var activePage = $.mobile.activePage,
-
-		/* Viewport's height */
-		screenHeight = $.mobile.getScreenHeight(),
-
-		/* Content div - include padding too! */
-		contentHeight = $(".ui-content", activePage).outerHeight(),
-
-		/* Height of scrolled content (invisible) */
-		scrolled = $(window).scrollTop(),
-
-		/* Height of both Header & Footer and whether they are fixed
-		   If any of them is fixed, we will remove (1px)
-		   If not, outer height is what we need */
-		header = $(".ui-header", activePage).outerHeight() - 1, footer = $(
-				".ui-footer", activePage).outerHeight() - 1,
-
-		/* Math 101 - Window's scrollTop should
-		   match content minus viewport plus toolbars */
-		scrollEnd = contentHeight - screenHeight + header + footer;
-
-		/* if (pageX) is active and page's bottom is reached
-		   load more elements  */
-		if (activePage[0].id == "home" && scrolled >= scrollEnd) {
-			/* run loadMore function */
-			addMore(activePage);
-		}else if(activePage[0].id == "shareOnWeibo" && scrolled >= scrollEnd) {
-			/* run loadMore function */
-			addMoreFriend(activePage);
-		}
-	}
-	function addMore(page) {
-		/* remove scrollstop event listener */
-		$(document).off("scrollstop");
-
-		/* show loader (optional) */
-		$.mobile.loading("show", {
-			text : "loading more..",
-			textVisible : true
-		});
-
-		/* delay loading elements 500ms
-		   and then re-attach scrollstop */
-		setTimeout(
-				function() {
-					//
-					console.debug("load more");
-					guessStore
-							.fetch({
-								criteria : JSON.stringify({
-									questionId : question.id,
-									similarity : {
-										$lt : 1.0
-									}
-								})
-							}, 10)
-							.then(
-									function(data) {
-										console.debug(data);
-										var output = "";
-										for (var i = 0; i < data.length; i++) {
-											var guess = data[i];
-											output += '<li class="guess">';
-											output += '<img src="/image/anonymous_avatar.png"/>';
-											output += '<h1>猜：' + guess.answer
-													+ '</h1>';
-											output += '<span>准确度：'
-													+ (guess.similarity * 100)
-													+ '%</span>';
-											output += '<p>' + guess.assessment
-													+ '</p>';
-											output += '</li>';
-										}
-
-										$("#guessList", page).append(output)
-												.listview("refresh");
-										$.mobile.loading("hide");
-
-										if (data.length > 0) {
-											/* re-attach scrollstop */
-											$(document).on("scrollstop",
-													checkScroll);
-										}
-									});
-				}, 500);
-	}
-	
-	function addMoreFriend(page){
-		/* remove scrollstop event listener */
-		$(document).off("scrollstop");
-
-		/* show loader (optional) */
-		$.mobile.loading("show", {
-			text : "loading more..",
-			textVisible : true
-		});
-
-		/* delay loading elements 500ms
-		   and then re-attach scrollstop */
-		setTimeout(
-				function() {
-					//
-					console.debug("load more");
-					weibo.fetchFriend(20,function(items){
-						// append to friend list
-						
-						var output='';
-						for(var i=0;i<items.length;i++){
-							var item = items[i];
-							output+='<li class="user" data-screen-name="'+item.screen_name+'">';
-							//avatar
-							output+='<img src="'+item.profile_image_url+'" />';
-							// screen name
-							output+='<h1>'+item.screen_name+'</h1>';
-							output+='</li>';
-						}
-						
-						$('#friendList',page).append(output).listview('refresh');
-						
-						// friend check event handler
-						$('#friendList li').on('click',function(event){
-							var friendName =$(this).attr('data-screen-name');
-							console.log(friendName);
-							
-							var text = $('#shareOnWeibo-status').val();
-							$('#shareOnWeibo-status').val(text+'@'+friendName);
-						});
-						
-						$.mobile.loading("hide");
-
-						if (items.length > 0) {
-							/* re-attach scrollstop */
-							$(document).on("scrollstop",
-									checkScroll);
-						}
-						
-					});
-				}, 500);
-	}
-	
-	var showShareTip=function(){
-		$("#shareGuide").popup("open",{x:0,y:0});
-		$("#shareGuide > div.ui-popup-arrow-container.ui-popup-arrow-t").css("left","").css("right","10px");
-		$("#shareGuide-popup").css("top","10px").css("left","").css("right","15px");
-		
-		setTimeout(function(){
-			$("#shareGuide").popup("close");
-		},2000);
-	};
-	
-	var showShareConfirmDialog=function(){
-		// populate content of share confirm dialog
-		$("#shareConfirmDialog-assessment").html(locals.guess.assessment+"你还有脸告诉别人么？");
-		
-		// don't share threshold
-		var notShareThreshold=0.8;
-		// decide left button
-		if(Math.random() >notShareThreshold){
-			// share
-			$("#shareConfirmDialog-leftButton").html("我就是没节操");
-			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"check"});
-			$("#shareConfirmDialog-leftButton").unbind("click");
-			$("#shareConfirmDialog-leftButton").click(function(){
-				$("#shareConfirmDialog").popup("close");
-				setTimeout(showShareTip,300);
-			});
-		}else{
-			// not share
-			$("#shareConfirmDialog-leftButton").html("没脸");
-			$("#shareConfirmDialog-leftButton").buttonMarkup({icon:"delete"});
-			$("#shareConfirmDialog-leftButton").unbind("click");
-			$("#shareConfirmDialog-leftButton").click(function(){
-				$("#shareConfirmDialog").popup("close");
-			});
-		}
-		
-		// decide right button
-		if(Math.random() >notShareThreshold){
-			// share
-			$("#shareConfirmDialog-rightButton").html("我就是没节操");
-			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"check"});
-			$("#shareConfirmDialog-rightButton").unbind("click");
-			$("#shareConfirmDialog-rightButton").click(function(){
-				$("#shareConfirmDialog").popup("close");
-				setTimeout(showShareTip,300);
-			});
-		}else{
-			// not share
-			$("#shareConfirmDialog-rightButton").html("没脸");
-			$("#shareConfirmDialog-rightButton").buttonMarkup({icon:"delete"});
-			$("#shareConfirmDialog-rightButton").unbind("click");
-			$("#shareConfirmDialog-rightButton").click(function(){
-				$("#shareConfirmDialog").popup("close");
-			});
-		}
-		
-    	$("#shareConfirmDialog").popup("open");
-	};
-	var playCanvas;
-	// link the new button with newCanvas() function
-	$(document).ready(function() {
-		// load paint
-		
-		$.ajax({
-			url:'/data/paint/'+locals.question.paintId,
-			type:'GET',
-			dataType:'json',
-			success:function(response){
-				var paint = response;
-				var stepsLZMABytes = Base64Binary.decodeArrayBuffer(paint.stepsLZMA);
-					LZMA.decompress(stepsLZMABytes,function(result){
-						paint.steps=JSON.parse(result);
-						var canvas = '<canvas id="playCanvas" width="' + paint.canvas.size.width
-						+ '" height="' + paint.canvas.size.height + '"></canvas>';
-						$("#paint").html(canvas);
-						
-						playCanvas = new PlayCanvas(document.getElementById('playCanvas'),paint);
-						playCanvas.play();
-					},function(progress){
-						console.log('progress:'+progress);
-					});
-				
-				
-				
-			}
-		});
-		$("#draw").click(function() {
-			window.location = "/page/draw.html";
-		});
-
-		$("#guess").click(function() {
-			// show dialog ask answer
-			me.firecloud.common.getUserId(function(err,userId){
-				if(err!=null){
-					// 
-					$('#loginGuide').popup('open');
-				}else{
-					document.guessForm.reset();
-					document.guessForm.userId.value=userId;
-					$("#guessForm").popup("open");
-				}
-			});
-			
-		});
-		
-		$("#share").click(function(){
-			// check authentication
-			me.firecloud.common.getUserId(function(err,userId){
-				if(err!=null){
-					// guide user login
-					$('#loginGuide').popup('open');
-				}else{
-					$('#shareMenu').popup('open');
-				}
-			});
-			
-		});
-		
-		// bind login guide event handlers
-		$('#loginGuide').on('click', 'li', function() {
-			var loginMethod = $(this).attr('id');
-			if(loginMethod==='weibo'){
-				window.location='/authentication/login?type=weibo';
-			}
-		});
-		
-		// play control button
-		
-		$('#control-restart').click(function(){
-			playCanvas.restart();
-			
-			$('#control-play').closest('.ui-btn').hide();
-			$('#control-pause').closest('.ui-btn').show();
-		});
-		
-		$('#control-play').click(function(){
-			playCanvas.play();
-			
-			$('#control-play').closest('.ui-btn').hide();
-			$('#control-pause').closest('.ui-btn').show();
-		});
-		
-		$('#control-pause').click(function(){
-			playCanvas.pause();
-			
-			$('#control-play').closest('.ui-btn').show();
-			$('#control-pause').closest('.ui-btn').hide();
-		});
-		
-		// init play control button
-		$('#control-play').closest('.ui-btn').hide();
-		
-		// share on weibo event handlers
-		$('#shareOnWeibo').on("pageshow",function(event,ui){
-			setTimeout(function(){
-			$('#shareOnWeibo-status').css({
-			    'height': 'auto'
-			  });
-			
-			$('#shareOnWeibo-status').val('#画点神马#'+window.location.origin+window.location.pathname+' ');
-			},200);
-			addMoreFriend($.mobile.activePage);
-		});
-		
-		// do share on weibo 
-		$('#shareOnWeibo-complete').on('click',function(event,ui){
-			// get status text
-			var status = $('#shareOnWeibo-status').val();
-			// get image
-			playCanvas.toBlob(function(imageBlob){
-				var formData = new FormData();
-				formData.append('status',status);
-				formData.append('image',imageBlob);
-				$.mobile.loading("show");
-				
-				$.ajax({
-				    type: 'POST',
-				    url: '/socialnetwork/statuses/upload',
-				    data: formData,
-				    processData: false,
-				    contentType: false
-				}).done(function(data) {
-				       console.log(data);
-				       $.mobile.loading("hide");
-				       $('#shareOnWeiboSuccessfulInfo').popup('open');
-				       setTimeout(function(){
-				    	   //$('#shareOnWeiboSuccessfulInfo').popup('close');
-				    	   $.mobile.navigate('#home');
-				       },500);
-				});
-			});
-			
-			
-			
-		});
-		
-		
-
-		/* attach if scrollstop for first time */
-		$(document).on("scrollstop", checkScroll);
-	});
+$(document).ready(function() {
+		questionView.init();
+});
 </script>
 </head>
 <body>
@@ -482,36 +104,11 @@ locals.guess = {
 			<div data-role="controlgroup" data-type="horizontal"
 				class="ui-btn-right">
 				<a id="guess" data-role="button" data-icon="check">猜</a>
-				<a id="share" data-role="button" data-icon="action">分享</a>
 			</div>
 		</div>
 		<div id="content" data-role="content">
-			<!-- guess result start-->
-			<% if (locals.guess){ if(guess.similarity === 1.0){ %>
-			<div class="guess-result">
-				<h1 style="text-align: center;">恭禧！猜对了！！</h1>
-				<h2 style="text-align: center;">正确答案：<%=guess.answer %></h2>
-				<h2 style="text-align: center;">正确/尝试</h2>
-				<h2 style="text-align: center;"><%=question.correct
-					%>/<%=question.correct+question.wrong %></h2>
-			</div>
-			<% }else{ %>
-			<div class="guess-result">
-				<h1 style="text-align: center;">猜错了！！</h1>
-				<h2 style="text-align: center;">正确/尝试</h2>
-				<h2 style="text-align: center;"><%=question.correct
-					%>/<%=question.correct+question.wrong %></h2>
-			</div>
-			<% } } %>
-			<!-- guess result end -->
-			<!-- 
-			<h3><span>提示：</span><%=(question.hint && question.hint!=null && question.hint!='')?question.hint:''%></h3>
-			-->
 			<div id="paint" style="left:0px;">Loading ...</div>
 
-			<ul data-role="listview" id="guessList" data-theme="c">
-
-			</ul>
 		</div>
 		<div data-role="footer" data-position="fixed">
 				<a id="control-restart" data-role="button"  data-icon="restart" data-inline="false" href="#" data-iconpos="notext">restart</a>
@@ -524,7 +121,7 @@ locals.guess = {
 				enctype="application/x-www-form-urlencoded" data-ajax="false">
 				<div style="padding: 10px 20px;">
 
-					<label for="answer">答案：</label> <input name="answer" value=""
+					<label for="answer">答案：</label> <input id="guessForm-answer" name="answer" value=""
 						type="text" placeholder="答案 必填" required/> <input id="" name="userId"
 						value="" type="hidden" /> <input name="questionId"
 						value="<%=question._id %>" type="hidden" />
@@ -567,6 +164,20 @@ locals.guess = {
 						src="http://www.sinaimg.cn/blog/developer/wiki/LOGO_48x48.png"
 						alt="新浪微博" class="ui-li-icon">新浪微博</a></li>
 			</ul>
+		</div>
+		
+		<div data-role="popup" id="guessResultInfo"
+			data-dismissible="false">
+			<div data-role="header">
+				<h1 id="guessResultInfo-title"></h1> 
+			</div>
+			<div role="main" class="ui-content">
+				<h3 class="ui-title" id="guessResultInfo-content"></h3>
+				        <a href="#chooseCounterpartPage" id="guessResultInfo-ok"
+					class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" data-rel="close">确定</a>
+					<a href="#" id="guessResultInfo-beatBack"
+					class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" >回敬</a>
+			</div>
 		</div>
 	</div>
 	<div data-role="page" id="shareOnWeibo" data-theme="a">

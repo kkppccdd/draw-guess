@@ -88,6 +88,7 @@ app.use(weibo.oauth({
 	blogtypeField : 'type',
 	callbackPath : '/authentication/sinaweibo/callback',
 	afterLogin : function(req, res, callback) {
+		req.session.oauthUser.authenticatedAt=Date.now();
 		var weiboUser = req.session.oauthUser;
 		console.log(req.session.oauthUser.screen_name, 'login success');
 		console.log(req.session.oauthUser);
@@ -112,9 +113,11 @@ app.use(weibo.oauth({
 				// insert one
 				var newUser = {
 					avatar:weiboUser.profile_image_url,
+					name:weiboUser.screen_name,
 					providers : [ {
 						type : 'weibo',
-						accountId : weiboUser.id
+						accountId : weiboUser.id,
+						name:weiboUser.screen_name
 					} ]
 				};
 				

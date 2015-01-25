@@ -58,6 +58,10 @@ module.exports = (function() {
 
 						model.correct = (model.correct == undefined ? 0
 								: model.correct) + 1;
+						// target user has complete the question
+						if(userId===model.toUserId){
+							model.completed=true;
+						}
 						db.collection("question").updateById(model._id, model,
 								function(err, result) {
 									if (err) {
@@ -79,10 +83,7 @@ module.exports = (function() {
 								});
 					}
 					
-					res.render("question", {
-						question : model,
-						guess:guess
-					});
+					res.json(guess);
 				});
 	});
 

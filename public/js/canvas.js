@@ -93,6 +93,14 @@ RecordableCanvas.prototype = {
 		// perform on concrete context
 		this.concreteContext.fillRect(x, y, width, height);
 	},
+	clearRect : function(x, y, width, height) {
+		var step = new Step(Operations.MANIPULATION, 'c.clearRect(' + x + ','
+				+ y + ',' + width + ',' + height + ');');
+		this.paint.steps.push(step);
+
+		// perform on concrete context
+		this.concreteContext.clearRect(x, y, width, height);
+	},
 	toBlob:function(a,b,c){
 		this.concreteCanvas.toBlob(a,b,c);
 	}
@@ -231,6 +239,25 @@ Object.defineProperty(RecordableCanvas.prototype, 'shadowColor', {
 
 		// perform on concrete context
 		this.concreteContext.shadowColor = value;
+	}
+});
+
+Object.defineProperty(RecordableCanvas.prototype, 'width', {
+	get : function() {
+		return this.concreteCanvas.width;
+	},
+	set : function(value) {
+		// perform on concrete context
+		this.concreteCanvas.width = value;
+	}
+});
+Object.defineProperty(RecordableCanvas.prototype, 'height', {
+	get : function() {
+		return this.concreteCanvas.height;
+	},
+	set : function(value) {
+		// perform on concrete context
+		this.concreteCanvas.height = value;
 	}
 });
 
