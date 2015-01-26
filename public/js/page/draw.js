@@ -207,6 +207,7 @@
 	 * paging display word list
 	 */
 	draw.displayMoreWord = function(page, listViewSelector, tagLabel) {
+		$.mobile.loading("show");
 		this.store.wordStore
 				.fetch(
 						10,
@@ -248,6 +249,8 @@
 										draw.displayMoreWord(page,
 												listViewSelector);
 									});
+							
+							$.mobile.loading("hide");
 						});
 	}
 	
@@ -295,7 +298,7 @@
 								listViewSelector);
 					});
 		};
-		
+		$.mobile.loading("show");
 		if(this.loadedEnoughWord==true){
 			showOtherWord(3);
 		}else{
@@ -313,6 +316,8 @@
 			showOtherWord(3);
 		});
 		}
+		
+		$.mobile.loading("hide");
 	}
 
 	draw.checkAuthentication = function(next) {
@@ -350,8 +355,9 @@
 				});
 				return true;
 			} else {
-				// show dialog notify user navigate to choose counterpart page
-				$('#drawHome-notifyChooseCounterpart').popup('open');
+				
+				// navigate to choose counterpart page
+				$.mobile.navigate('#chooseCounterpartPage');
 				return false;
 			}
 		} else {
@@ -363,8 +369,8 @@
 	draw.checkWord = function() {
 		// check property
 		if (draw.word == null) {
-			// ask user to choose one
-			$('#drawHome-notifyChooseWord').popup('open');
+			// navigate to choose word page
+			$.mobile.navigate('#chooseWordPage');
 			return false;
 		} else {
 			// display word on #drawHome-title
@@ -401,8 +407,9 @@
 		$('#drawHome-title').html(draw.getTitle());
 		
 		draw.checkAuthentication(function() {
-			draw.checkCounterpart();
-			draw.checkWord();
+			if(draw.checkCounterpart()==true){
+				draw.checkWord();
+			}
 		});
 	}
 
@@ -599,46 +606,45 @@
 					avatar : socialAvatar
 				} ]
 			};
+			$.mobile.loading("show");
+			// validate chosed counterpart
+			var userStore = new RestStore('user');
+			userStore
+					.query(
+							{
+								'providers.type' : window.draw.counterpart.providers[0].type,
+								'providers.accountId' : window.draw.counterpart.providers[0].accountId
+							},
+							function(users) {
+								if (users != null
+										&& users.length > 0) {
+									var counterpart = users[0];
+									window.draw.counterpart = counterpart;
+									$.mobile.loading("hide");
+									// backto draw home
+									$.mobile
+											.navigate('#draw-home');
+								} else {
+									// create new
+
+									userStore
+											.insert(
+													window.draw.counterpart,
+													function(
+															insertedObject) {
+														window.draw.counterpart = insertedObject;
+														// backto
+														// draw
+														// home
+														$.mobile.loading("hide");
+														$.mobile
+																.navigate('#draw-home');
+													});
+								}
+							});
 		});
 
-		$('#chooseCounterpartPage-check')
-				.on(
-						'click',
-						function() {
-							// validate chosed counterpart
-							var userStore = new RestStore('user');
-							userStore
-									.query(
-											{
-												'providers.type' : window.draw.counterpart.providers[0].type,
-												'providers.accountId' : window.draw.counterpart.providers[0].accountId
-											},
-											function(users) {
-												if (users != null
-														&& users.length > 0) {
-													var counterpart = users[0];
-													window.draw.counterpart = counterpart;
-													// backto draw home
-													$.mobile
-															.navigate('#draw-home');
-												} else {
-													// create new
-
-													userStore
-															.insert(
-																	window.draw.counterpart,
-																	function(
-																			insertedObject) {
-																		window.draw.counterpart = insertedObject;
-																		// backto
-																		// draw
-																		// home
-																		$.mobile
-																				.navigate('#draw-home');
-																	});
-												}
-											});
-						});
+							
 		/* choose counterpart page event handlers end */
 
 	};
