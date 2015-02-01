@@ -130,6 +130,27 @@
 	draw.submitQuestion = function(canvas, answer) {
 
 		var paint = canvas.paint;
+		require(['/js/authentication/index.js'],function(authentication){
+			authentication.checkLogin(function(user){
+				var userId=user._id;
+				$.mobile.loading("show");
+				paint.creatorId = userId;
+				postPaint(paint, function(response) {
+					var question = {
+						userId : paint.creatorId,
+						paintId : response._id,
+						answer : answer,
+						correct : 0,
+						wrong : 0,
+						toUserId:draw.counterpart._id,
+						completed:false
+					};
+
+					postQuestion(question);
+				});
+			});
+		});
+		/*
 		me.firecloud.common.getUserId(function(err, userId) {
 			if (err != null) {
 				$('#loginGuide').popup('open');
@@ -150,7 +171,7 @@
 					postQuestion(question);
 				});
 			}
-		});
+		});*/
 
 	};
 
@@ -301,6 +322,7 @@
 		$.mobile.loading("show");
 		if(this.loadedEnoughWord==true){
 			showOtherWord(3);
+			$.mobile.loading("hide");
 		}else{
 		this.store.wordStore.fetch(50,{},function(items){
 			if(draw.wordCache==undefined || draw.wordCache==null){
@@ -314,22 +336,23 @@
 			}
 			
 			showOtherWord(3);
+			$.mobile.loading("hide");
 		});
 		}
 		
-		$.mobile.loading("hide");
+		
 	}
 
 	draw.checkAuthentication = function(next) {
-		me.firecloud.common.getUserId(function(err, userId) {
-			if (err != null) {
+		require(['/js/authentication/index.js'],function(authentication){
+			authentication.checkLogin(function(user){
+				// do nothing
+				console.log('authenticated, userId:' + user._id);
+				next();
+			},function(){
 				// lead user login
 				$('#loginGuide').popup('open');
-			} else {
-				// do nothing
-				console.log('authenticated, userId:' + userId);
-				next();
-			}
+			});
 		});
 	}
 
@@ -491,13 +514,17 @@
 			// get image
 			draw.ctx.toBlob(function(imageBlob){
 				var formData = new FormData();
+
 				formData.append('status',status);
-				formData.append('image',imageBlob);
+				formData.append('pic',imageBlob);
+				formData.append('access_token',WB2.oauthData.access_token);
+
 				$.mobile.loading("show");
 				
+
 				$.ajax({
 				    type: 'POST',
-				    url: '/socialnetwork/statuses/upload',
+				    url: 'https://api.weibo.com/2/statuses/upload.json',
 				    data: formData,
 				    processData: false,
 				    contentType: false
@@ -505,7 +532,12 @@
 				       console.log(data);
 				       $.mobile.loading("hide");
 				       window.location='/page/question/'+draw.question._id+'.html';
+				}).fail(function(err){
+					console.log(err);
+				       $.mobile.loading("hide");
+				       window.location='/page/question/'+draw.question._id+'.html';
 				});
+				
 			});
 		});
 		

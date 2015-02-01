@@ -10,22 +10,32 @@ function Weibo(){
 
 Weibo.prototype.constructor=Weibo;
 
-Weibo.prototype.fetchFriend=function(batchSize,callback){
+Weibo.prototype.fetchFriend=function(batchSize,success){
 	var cursor=0;
 	if(this._cursors['friend']===undefined){
 		this._cursors['friend']=cursor;
 	}else{
 		cursor=this._cursors['friend'];
 	}
-	var theWeibo =this;
-	$.ajax({
-		url:this._baseURL+'/friendship/follower',
-		method:'GET',
-		dataType:'json',
-		data:{start:cursor,limit:batchSize},
-		success:function(response){
-			theWeibo._cursors['friend']=response.next_cursor;
-			callback(response.users);
-		}
+	var theThis =this;
+	
+	var parameters={
+			cursor:cursor,
+			count:batchSize,
+			uid:WB2.oauthData.uid
+	};
+	
+	var options={
+			method:'GET'
+	};
+	
+	WB2.anyWhere(function(W){
+		W.parseCMD('/friendships/followers.json',function(result,status){
+			if(status==true){
+				theThis._cursors['friend']=result.next_cursor;
+				
+				success(result.users);
+			}
+		},parameters,options);
 	});
 }
