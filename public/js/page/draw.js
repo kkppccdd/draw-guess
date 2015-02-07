@@ -3,7 +3,6 @@
  */
 
 (function(draw, $, undefined) {
-	draw.counterpart = null;
 	draw.word = null;
 
 	draw.ctx = null;
@@ -58,13 +57,7 @@
 				$.mobile.loading("hide");
 				
 				draw.question=msg;
-				
-				// ask you post message on weibo
-				var statusText = '#画点神马#'+' '+window.location.origin+"/page/question/" + msg._id + ".html"+' @'+draw.counterpart.providers[0].name+' 你猜得出我画的是神马么？';
-				$('#drawHome-sendMessageToCounterpart-status').val(statusText);
-				setTimeout(function(){
-					$('#drawHome-sendMessageToCounterpart').popup('open');
-				},500);
+				window.location="/page/question/" + msg._id + ".html";
 				
 			}
 		});
@@ -77,9 +70,11 @@
 	// function to setup a new canvas for drawing
 	draw.newCanvas = function() {
 		// define and resize canvas
-		$("#content").height($(window).height() - 90);
-		var canvas = '<canvas id="canvas" width="' + $(window).width()
-				+ '" height="' + ($(window).height() - 90) + '"></canvas>';
+		var width=$(window).width();
+		var height=width;
+		$("#content").height(height);
+		var canvas = '<canvas id="canvas" width="' + width
+				+ '" height="' + height + '"></canvas>';
 		$("#content").html(canvas);
 
 		// $('#content').draggable('disable');
@@ -141,9 +136,7 @@
 						paintId : response._id,
 						answer : answer,
 						correct : 0,
-						wrong : 0,
-						toUserId:draw.counterpart._id,
-						completed:false
+						wrong : 0
 					};
 
 					postQuestion(question);
@@ -356,39 +349,6 @@
 		});
 	}
 
-	draw.checkCounterpart = function() {
-		// check property
-		if (draw.counterpart == null) {
-			// not choose
-			// check if counterpart is in url,
-			// http://draw-guess.herokuapp.com/page/draw.html?toUserId=12345
-			// navigate user to choose counterpart page
-			var url = window.location.toString();
-			var matchedToUserIdStr = url.match(/toUserId=([^&]+)/);
-			if (matchedToUserIdStr != null && matchedToUserIdStr.length >= 2) {
-				var toUserId = matchedToUserIdStr[1];
-
-				// load user
-				this.store.userStore.get(toUserId, function(user) {
-					if (user != null) {
-						draw.counterpart = user;
-						// display word on #drawHome-title
-						$('#drawHome-title').html(draw.getTitle());
-					}
-				});
-				return true;
-			} else {
-				
-				// navigate to choose counterpart page
-				$.mobile.navigate('#chooseCounterpartPage');
-				return false;
-			}
-		} else {
-			// display word on #drawHome-title
-			$('#drawHome-title').html(this.getTitle());
-			return true;
-		}
-	};
 	draw.checkWord = function() {
 		// check property
 		if (draw.word == null) {
@@ -410,13 +370,6 @@
 		}else{
 			title+='正在画 ';
 		}
-		title+='<br/>';
-		
-		if(this.counterpart){
-			title+='对手是 '+this.counterpart.name;
-		}else{
-			title+='对手是 ';
-		}
 		
 		return title;
 	}
@@ -430,9 +383,7 @@
 		$('#drawHome-title').html(draw.getTitle());
 		
 		draw.checkAuthentication(function() {
-			if(draw.checkCounterpart()==true){
 				draw.checkWord();
-			}
 		});
 	}
 
@@ -568,36 +519,16 @@
 
 		// link the complete button with completeDraw() function
 		$("#complete").click(function() {
-			// set default anser as draw.word
-			$('#answer').val(draw.word);
-			// show dialog ask answer
-			$("#questionSubmitForm").popup("open");
+
+			var answer = draw.word;
+			
+			var canvas = draw.ctx;
+			
+
+			draw.submitQuestion(canvas, answer);
 
 		});
 
-		$("#questionSubmitForm").submit(function(e) {
-			try {
-				$("#questionSubmitForm").popup("close");
-				var answer = $('#answer').val();
-
-				console.debug("get answer:" + answer);
-				if (answer === "") {
-					console.debug("get empty answer.");
-					return false;
-				}
-
-				var canvas = draw.ctx;
-				
-
-				draw.submitQuestion(canvas, answer);
-				
-			} catch (ex) {
-				console.error(ex);
-
-			} finally {
-				return false;
-			}
-		});
 
 		// bind login guide event handlers
 		$('#loginGuide').on('click', 'li', function() {
@@ -608,77 +539,6 @@
 		});
 
 		// });
-	};
-
-	var initChooseCounterpartPage = function() {
-		// bind event
-
-		// when page show, it should load friendlist
-		$('#chooseCounterpartPage').on(
-				"pageshow",
-				function() {
-					console.log('init page chooseCounterpart');
-					draw.displayMoreFriend($('#chooseCounterpartPage'),
-							'#chooseCounterpartPage-friendList');
-				});
-
-		/* choose counterpart page event handlers start */
-		$('#chooseCounterpartPage-friendList').on('click', 'li.user', function() {
-			var socialUserId = $(this).attr('data-social-user-id');
-			var socialName = $(this).attr('data-social-name');
-			var socialAvatar = $(this).attr('data-social-avatar');
-
-			window.draw.counterpart = {
-				avatar : socialAvatar,
-				name: socialName,
-				providers : [ {
-					type : 'weibo',
-					accountId : socialUserId,
-					name : socialName,
-					avatar : socialAvatar
-				} ]
-			};
-			$.mobile.loading("show");
-			// validate chosed counterpart
-			var userStore = new RestStore('user');
-			userStore
-					.query(
-							{
-								'providers.type' : window.draw.counterpart.providers[0].type,
-								'providers.accountId' : window.draw.counterpart.providers[0].accountId
-							},
-							function(users) {
-								if (users != null
-										&& users.length > 0) {
-									var counterpart = users[0];
-									window.draw.counterpart = counterpart;
-									$.mobile.loading("hide");
-									// backto draw home
-									$.mobile
-											.navigate('#draw-home');
-								} else {
-									// create new
-
-									userStore
-											.insert(
-													window.draw.counterpart,
-													function(
-															insertedObject) {
-														window.draw.counterpart = insertedObject;
-														// backto
-														// draw
-														// home
-														$.mobile.loading("hide");
-														$.mobile
-																.navigate('#draw-home');
-													});
-								}
-							});
-		});
-
-							
-		/* choose counterpart page event handlers end */
-
 	};
 
 
@@ -713,7 +573,6 @@
 	draw.init = function() {
 		// init event handlers
 		initDrawPage();
-		initChooseCounterpartPage();
 		initChooseWordPage();
 	}
 

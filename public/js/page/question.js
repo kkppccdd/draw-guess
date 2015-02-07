@@ -22,91 +22,7 @@
 		$("#draw").click(function() {
 			window.location = "/page/draw.html";
 		});
-
-		$("#guess").click(function() {
-			// show dialog ask answer
-			me.firecloud.common.getUserId(function(err, userId) {
-				if (err != null) {
-					// 
-					$('#loginGuide').popup('open');
-				} else {
-					document.guessForm.reset();
-					document.guessForm.userId.value = userId;
-					$("#guessForm").popup("open");
-				}
-			});
-
-		});
 		
-		// overwrite submit of guessForm, post guess by ajax
-		
-		$('#guessForm').submit(function(event){
-			try {
-				$("#guessForm").popup("close");
-				var answer = $('#guessForm-answer').val();
-
-				console.debug("get answer:" + answer);
-				if (answer === "") {
-					console.debug("get empty answer.");
-					return false;
-				}
-
-				var formData = new FormData();
-				formData.append('questionId',questionView.question._id);
-				formData.append('answer',answer);
-				
-				$.ajax({
-				    type: 'POST',
-				    url: '/page/question/'+questionView.question._id+'.html',
-				    data: formData,
-				    processData: false,
-				    contentType: false
-				}).done(function(guess) {
-				       console.log(guess);
-				      if(guess.similarity===1.0){
-				    	  // correct
-				    	  // populate ttle and content o popup guessResultInfo
-				    	  $('#guessResultInfo-title').html('猜对了!');
-				    	  $('#guessResultInfo-content').html('正确答案：'+guess.answer);
-				    	  $('#guessResultInfo-ok').closest('.ui-btn').hide();
-				    	  $('#guessResultInfo-beatBack').closest('.ui-btn').show();
-				    	  $('#guessResultInfo').popup('open');
-				      }else{
-				    	  //incorrect
-				    	// populate ttle and content o popup guessResultInfo
-				    	  $('#guessResultInfo-title').html('猜错了!');
-				    	  $('#guessResultInfo-content').html(guess.assessment);
-				    	  $('#guessResultInfo-ok').closest('.ui-btn').show();
-				    	  $('#guessResultInfo-beatBack').closest('.ui-btn').hide();
-				    	  $('#guessResultInfo').popup('open');
-				      }
-				});
-				
-			} catch (ex) {
-				console.error(ex);
-
-			} finally {
-				return false;
-			}
-		});
-		
-		$('#guessResultInfo-beatBack').click(function(event,ui){
-			var url ='/page/draw.html?toUserId='+questionView.question.userId;
-			window.location=url;
-		});
-
-		$("#share").click(function() {
-			// check authentication
-			me.firecloud.common.getUserId(function(err, userId) {
-				if (err != null) {
-					// guide user login
-					$('#loginGuide').popup('open');
-				} else {
-					$('#shareMenu').popup('open');
-				}
-			});
-
-		});
 	};
 
 	var initQuestionPagePlayControlEventHandler = function() {
@@ -114,27 +30,7 @@
 
 		$('#control-restart').click(function() {
 			questionView.playCanvas.restart();
-
-			$('#control-play').closest('.ui-btn').hide();
-			$('#control-pause').closest('.ui-btn').show();
 		});
-
-		$('#control-play').click(function() {
-			questionView.playCanvas.play();
-
-			$('#control-play').closest('.ui-btn').hide();
-			$('#control-pause').closest('.ui-btn').show();
-		});
-
-		$('#control-pause').click(function() {
-			questionView.playCanvas.pause();
-
-			$('#control-play').closest('.ui-btn').show();
-			$('#control-pause').closest('.ui-btn').hide();
-		});
-
-		// init play control button
-		$('#control-play').closest('.ui-btn').hide();
 	}
 
 	var initQuestionPage = function() {
@@ -154,6 +50,124 @@
 
 		questionPageOnShow();
 	};
+	
+	var initAnswerPanel=function(){
+		// init guess form
+		var answerLength = questionView.question.answer.length;
+		var placeHolder ='正确答案是'+answerLength+'个字';
+		
+		$('#guessForm-answer').attr("placeholder",placeHolder);
+		$('#guessForm-answer').attr('size',answerLength);
+		
+		// construct charPosts
+		/*
+		var answerLength = questionView.question.answer.length;
+		var output = "";
+		for(var i=0;i<answerLength;i++){
+			var charPotHtml='<div class="charPotHolder"><div class="charPot">&nbsp;</div></div>';
+			
+			output+=charPotHtml;
+		}
+		
+		$('#charPotList').html(output);
+		*/
+		// load random chars
+		/*
+		questionView.getRandomChars(20, function(chars){
+			var output="";
+			var answer=questionView.question.answer;
+			for(var i =0;i<answer.length;i++){
+				chars.push(answer[i]);
+			}
+			
+			for(var i=0;i<chars.length;i++){
+				var candidatePotHtml='<div class="candidateCharHolder" ><div class="candidateChar">'+chars[i]+'</div></div>';
+				output+=candidatePotHtml;
+			}
+			
+			$('#candidateCharList').html(output);
+		});
+		*/
+		
+		// init event handler
+		
+		
+		
+	// overwrite submit of guessForm, post guess by ajax
+		
+		$('#guessForm').submit(function(event){
+			event.preventDefault();
+			try {
+				
+				var answer = $('#guessForm-answer').val();
+
+				console.debug("get answer:" + answer);
+				if (answer === "") {
+					console.debug("get empty answer.");
+					return false;
+				}
+				
+
+				var formData = new FormData();
+				formData.append('questionId',questionView.question._id);
+				formData.append('answer',answer);
+				
+				$.ajax({
+				    type: 'POST',
+				    url: '/page/question/'+questionView.question._id+'.html',
+				    data: formData,
+				    processData: false,
+				    contentType: false
+				}).done(function(guess) {
+				       console.log(guess);
+				      if(guess.similarity===1.0){
+				    	  // correct
+				    	  $('#charPotList').css('background','#7FFF00');
+				    	  $('#guessForm-answerLabel').html(answer+'  正确!')
+				    	  $('#guessForm').unbind('submit');
+				    	  $('#guessForm-submit').attr('disabled','disabled');
+				    	  $('#guessForm-answer').attr('disabled','disabled');
+				      }else{
+				    	  //incorrect
+				    	  $('#charPotList').css('background','#FF4500');
+				    	  $('#guessForm-answerLabel').html(answer+'  错误!');
+				    	  $('#guessForm-answer').attr("placeholder",guess.assessment);
+				    	  document.guessForm.reset();
+				      }
+				});
+				
+			} catch (ex) {
+				console.error(ex);
+
+			} finally {
+				return false;
+			}
+		});
+		
+		
+		
+	}
+	
+	questionView.getRandomChars=function(size,callback){
+			var charStore = new RestStore('char');
+			var criteria={};
+			var count=3000;
+			charStore.fetch(count,criteria, function(items){
+				var charCount=items.length;
+				
+				var chars=new Array();
+				
+				for(var i=0;i<size;i++){
+					var index = Math.floor(Math.random()*charCount);
+					
+					chars.push(items[index].char);
+				}
+				
+				callback(chars);
+			});
+		
+		
+	}
 
 	var questionPageOnShow = function() {
 		// load paint
@@ -182,6 +196,10 @@
 
 			}
 		});
+		
+		
+		// init answer panel
+		initAnswerPanel();
 	}
 
 	/***************************************************************************

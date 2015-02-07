@@ -25,12 +25,6 @@ body {
 	background-color: #ddd;
 }
 
-#drawHome-title {
-font-size: .7em;
-text-align: left;
-color: sienna;
-height: 25px;
-}
 
 #canvas {
 	cursor: crosshair;
@@ -84,15 +78,16 @@ height: 25px;
 <body>
 	<div data-role="page" id="draw-home" data-theme="a">
 		<div data-role="header" data-position="fixed" data-tap-toggle="false">
-			<h3 id="drawHome-title">画点神马</h3>
+			<h3 id="drawHome-title">画点神马</h3><!-- 
 			<a href="#drawHome-menu" class="ui-btn-left" data-icon="action"
-				data-rel="popup">动作</a> <a id="complete" class="ui-btn-right"
+				data-rel="popup">动作</a> -->
+				<a id="complete" class="ui-btn-right"
 				data-icon="check">完成</a>
 		</div>
 		<div id="content" data-tap-toggle="false">
 			<p style="text-align: center">Loading Canvas...</p>
 		</div>
-		<div data-role="footer" data-position="fixed" data-tap-toggle="false">
+		<div>
 			<div class="tool-case">
 				<div class="tool-box">
 					<div class="tool pen">
@@ -254,35 +249,8 @@ height: 25px;
 			</div>
 		</div>
 
-		<div data-role="popup" id="drawHome-sendMessageToCounterpart"
-			data-dismissible="false">
-			<div data-role="header">
-				<h1>发送消息给对手</h1>
-			</div>
-			<div role="main" class="ui-content">
-				<textarea cols="40" rows="8" name="sendMessageToCounterpart-status"
-					id="drawHome-sendMessageToCounterpart-status" style='min-height: 150px;'>#画点神马#</textarea>
-				        <a id="drawHome-sendMessageToCounterpart-ok" 
-					class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b">发送</a>
-			</div>
-		</div>
 		<!-- popup end -->
 	</div>
-
-	<!-- choose counterpart page start -->
-	<div data-role="page" id="chooseCounterpartPage" data-theme="a">
-		<div data-role="header" data-position="fixed" data-tap-toggle="false">
-		<a class="ui-btn-left"
-				data-icon="back" data-rel="back">后退</a>
-			<h3>选择对手</h3>
-		</div>
-		<div data-role="content">
-			<ul data-role="listview" id="chooseCounterpartPage-friendList">
-				<li class="load-more-item">Loading...</li>
-			</ul>
-		</div>
-	</div>
-	<!-- choose counterpart page end -->
 	<div data-role="page" id="chooseWordPage" data-theme="a">
 		<div data-role="header" data-position="fixed" data-tap-toggle="false">
 			<h3>选择题目</h3>

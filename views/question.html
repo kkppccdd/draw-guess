@@ -58,11 +58,82 @@ li.guess>p {
 
 .ui-content{
 	padding:0px;
+
+	
+}
+
+#paint{
+z-index: 1;
 }
 #playCanvas{
 	margin: 0 auto 0 auto;
 	display: block;
+	background:white;
 }
+
+#controlPanel{
+top: 43px;
+left: 0px;
+position: absolute;
+z-index: 2;
+}
+
+#control-restart{
+	background-image:url("/image/control-restart.png");
+	background-size: 100% 100%;
+	height:32px;
+	width:32px;
+	opacity:0.4;
+}
+
+#home{
+background:#DBDBDB;
+}
+
+#charPotList{
+	text-align:center;
+	background:#66CCFF;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+
+#candidateCharList{
+	text-align:center;
+	padding-top: 6px;
+padding-bottom: 6px;
+	
+}
+.charPotHolder{
+	display:inline-block;
+	background: #0099CC;
+	padding: 2px;
+	border-radius: 3px;
+}
+.charPot{
+	background: white;
+	border-radius: 3px;
+	height: 24px;
+	width: 24px;
+	font-size: 1.2em;
+}
+
+.candidateCharHolder{
+	display:inline-block;
+	padding: 2px;
+	border-radius: 3px;
+
+}
+
+.candidateChar{
+	color: white;
+	border-radius: 3px;
+	height: 24px;
+	width: 24px;
+	font-size: 1.2em;
+	background:#0099FF;
+}
+
+
 </style>
 <script src="http://libs.useso.com/js/jquery/1.8.2/jquery.min.js"></script>
 <script
@@ -75,6 +146,7 @@ li.guess>p {
 <script src="/js/canvas.js"></script>
 <script src="/js/weibo.js"></script>
 <script src="/js/b64.js"></script>
+<script src="/js/store/RestStore.js"></script>
 <script src="/js/page/question.js"></script>
 <script type="text/javascript">
 questionView.question = {
@@ -100,45 +172,33 @@ $(document).ready(function() {
 	<div data-role="page" id="home" data-theme="a">
 		<div data-role="header" data-position="fixed">
 			<h3></h3>
-			<a id="draw" class="ui-btn-left" data-icon="plus">画</a>
-			<div data-role="controlgroup" data-type="horizontal"
-				class="ui-btn-right">
-				<a id="guess" data-role="button" data-icon="check">猜</a>
-			</div>
+			<a id="draw" class="ui-btn-right" data-icon="plus">画</a>
 		</div>
 		<div id="content" data-role="content">
-			<div id="paint" style="left:0px;">Loading ...</div>
-
-		</div>
-		<div data-role="footer" data-position="fixed">
-				<a id="control-restart" data-role="button"  data-icon="restart" data-inline="false" href="#" data-iconpos="notext">restart</a>
-				<a id="control-play"  data-role="button"  data-icon="play" data-inline="false" href="#" data-iconpos="notext">play</a>
-				<a id="control-pause" data-role="button"  data-icon="pause" data-inline="false" href="#" data-iconpos="notext">pause</a>				
-		</div>
-		<div data-role="popup" id="guessForm" class="ui-corner-all">
-			<form name="guessForm"
-				action="/page/question/<%=question._id %>.html" method="POST"
-				enctype="application/x-www-form-urlencoded" data-ajax="false">
-				<div style="padding: 10px 20px;">
-
-					<label for="answer">答案：</label> <input id="guessForm-answer" name="answer" value=""
-						type="text" placeholder="答案 必填" required/> <input id="" name="userId"
-						value="" type="hidden" /> <input name="questionId"
-						value="<%=question._id %>" type="hidden" />
-					<button type="submit">提交</button>
+			<div id="stage">
+				<div id="paint" style="left:0px;">Loading ...</div>
+				<div id="controlPanel" >
+					<div id="control-restart"></div>
 				</div>
-			</form>
+			</div>
+			
+			<div id="answerPanel">
+				<div id="charPotList">
+					<form id="guessForm" name="guessForm">
+						<label for="answer" id="guessForm-answerLabel">答案：</label> <input id="guessForm-answer" name="answer" value=""
+						type="text" placeholder="答案 必填" required/>
+					<button type="submit" id="guessForm-submit">提交</button>
+					</form>
+				</div>
+				<div id="candidateCharList">
+					
+				</div>
+			</div>
 		</div>
 		<div data-role="popup" id="shareGuide" class="ui-content" style="max-width:90%;" data-arrow="t" data-transition="slideup">
           <p>单击浏览器右上⻆按钮分享</p>
 		</div>
-		<div data-role="popup" id="shareConfirmDialog" class="ui-content" style="max-width:90%;" data-transition="slideup">
-		<div role="main" class="ui-content">
-          <h3 id="shareConfirmDialog-assessment"></h3>
-          	<a href="#shareConfirmDialog-leftButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-leftButton" data-icon="check">left</a>
-          	<a href="#shareConfirmDialog-rightButton" class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" id="shareConfirmDialog-rightButton" data-icon="check">right</a>
-          	</div>
-		</div>
+
 				<div data-role="popup" id="loginGuide" data-transition="slideup"
 			data-dismissible="false" class="ui-corner-all">
 			<ul data-role="listview" style="min-width:210px;">
@@ -166,20 +226,6 @@ $(document).ready(function() {
 			</ul>
 		</div>
 		
-		<div data-role="popup" id="guessResultInfo"
-			data-dismissible="false">
-			<div data-role="header">
-				<h1 id="guessResultInfo-title"></h1> 
-			</div>
-			<div role="main" class="ui-content">
-				<h3 class="ui-title" id="guessResultInfo-content"></h3>
-				        <a href="#chooseCounterpartPage" id="guessResultInfo-ok"
-					class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" data-rel="close">确定</a>
-					<a href="#" id="guessResultInfo-beatBack"
-					class="ui-btn ui-corner-all ui-shadow ui-btn-inline ui-btn-b" >回敬</a>
-			</div>
-		</div>
-	</div>
 	<div data-role="page" id="shareOnWeibo" data-theme="a">
 		<div data-role='header' data-position="fixed">
 			<a data-role="button" data-icon="back" data-rel='back' class="ui-btn-left" id="shareOnWeibo-back">Back</a>
